@@ -47,3 +47,14 @@ target_link_libraries(structure_3d ${LIBMESH_LIBRARIES})
 
 add_executable(structure_seg2d structure_seg2d.cpp)
 target_link_libraries(structure_seg2d ${LIBMESH_LIBRARIES})
+
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/param.dat
+  DEPENDS ${CMAKE_SOURCE_DIR}/param.dat
+  COMMAND ${CMAKE_COMMAND} ARGS -E copy ${CMAKE_SOURCE_DIR}/param.dat ${CMAKE_BINARY_DIR}/param.dat
+)
+
+add_custom_target( param_files ALL
+  DEPENDS ${CMAKE_BINARY_DIR}/param.dat
+)
+
