@@ -470,14 +470,10 @@ void assemble_structure (EquationSystems& es,
             }
             Number ux_old = 0.;
             Number uy_old = 0.;
-            Gradient grad_ux_old;
-            Gradient grad_uy_old;
             for (uint l=0; l<n_u_dofs; l++)
             {
                 ux_old += v[l][qp]*system.old_solution (dof_indices_ux[l]);
                 uy_old += v[l][qp]*system.old_solution (dof_indices_uy[l]);
-                grad_ux_old.add_scaled (grad_v[l][qp],system.old_solution (dof_indices_ux[l]));
-                grad_uy_old.add_scaled (grad_v[l][qp],system.old_solution (dof_indices_uy[l]));
             }
 
             for (uint i=0; i<n_d_dofs; i++)
@@ -502,22 +498,20 @@ void assemble_structure (EquationSystems& es,
                     Kdyuy(i,j) += -JxW[qp]*dt*b[i][qp]*v[j][qp];
                 }
 
-                Fux(i) += JxW[qp]*( (ux_old+dt*f_ux)*v[i][qp]
-                                    - dt*(mu*(2.*grad_v[i][qp](0)*grad_dx_old(0)
-                                              +grad_v[i][qp](1)*grad_dx_old(1)
-                                              +grad_v[i][qp](1)*grad_dy_old(0))
-                                              + lambda*(grad_v[i][qp](0)*grad_dx_old(0)+grad_v[i][qp](0)*grad_dy_old(1)))
-                                                       );
+                Fux(i) += JxW[qp]*(ux_old+dt*f_ux)*v[i][qp];
                 for (uint j=0; j<n_d_dofs; j++)
                 {
                     Kuxdx(i,j) += JxW[qp]*dt*(
-                    mu*(2.*grad_v[i][qp](0)*grad_b[j][qp](0)+grad_v[i][qp](1)*grad_b[j][qp](1)) // stress1 \eps(d):\eps(v)
-                    + lambda*grad_v[i][qp](0)*grad_b[j][qp](0) // stress2 tr(\eps(d))*tr(\eps(v))
-                    );
+                                              mu*(
+                                                  grad_v[i][qp]*grad_b[j][qp]
+                                                  +grad_v[i][qp](0)*grad_b[j][qp](0)
+                                                 ) // stress1 \eps(d):\eps(v)
+                                              + lambda*grad_v[i][qp](0)*grad_b[j][qp](0) // stress2 tr(\eps(d))*tr(\eps(v))
+                                             );
                     Kuxdy(i,j) += JxW[qp]*dt*(
-                                mu*grad_v[i][qp](1)*grad_b[j][qp](0) // stress1 \eps(d):\eps(v)
-                                + lambda*grad_v[i][qp](0)*grad_b[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
-                                );
+                                              mu*grad_v[i][qp](1)*grad_b[j][qp](0) // stress1 \eps(d):\eps(v)
+                                              + lambda*grad_v[i][qp](0)*grad_b[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
+                                             );
                 }
                 for (uint j=0; j<n_u_dofs; j++)
                 {
@@ -530,22 +524,20 @@ void assemble_structure (EquationSystems& es,
 //                    Kuxp(i,j) += -JxW[qp]*dt*q[j][qp]*grad_v[i][qp](1);
 //                }
 
-                Fuy(i) += JxW[qp]*( (uy_old+dt*f_uy)*v[i][qp]
-                                    - dt*(mu*(grad_v[i][qp](0)*grad_dx_old(1)
-                                              +grad_v[i][qp](0)*grad_dy_old(0)
-                                              +2.*grad_v[i][qp](1)*grad_dy_old(1))
-                                              + lambda*(grad_v[i][qp](1)*grad_dx_old(0)+grad_v[i][qp](1)*grad_dy_old(1)))
-                                                       );
+                Fuy(i) += JxW[qp]*(uy_old+dt*f_uy)*v[i][qp];
                 for (uint j=0; j<n_d_dofs; j++)
                 {
                     Kuydx(i,j) += JxW[qp]*dt*(
-                        mu*grad_v[i][qp](0)*grad_b[j][qp](1) // stress1 \eps(d):\eps(v)
-                        + lambda*grad_v[i][qp](1)*grad_b[j][qp](0) // stress2 tr(\eps(d))*tr(\eps(v))
-                    );
+                                              mu*grad_v[i][qp](0)*grad_b[j][qp](1) // stress1 \eps(d):\eps(v)
+                                              + lambda*grad_v[i][qp](1)*grad_b[j][qp](0) // stress2 tr(\eps(d))*tr(\eps(v))
+                                             );
                     Kuydy(i,j) += JxW[qp]*dt*(
-                                mu*(grad_v[i][qp](0)*grad_b[j][qp](0) + 2.*grad_v[i][qp](1)*grad_b[j][qp](1)) // stress1 \eps(d):\eps(v)
-                                    + lambda*grad_v[i][qp](1)*grad_b[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
-                                    );
+                                              mu*(
+                                                  grad_v[i][qp]*grad_b[j][qp]
+                                                  + grad_v[i][qp](1)*grad_b[j][qp](1)
+                                                 ) // stress1 \eps(d):\eps(v)
+                                              + lambda*grad_v[i][qp](1)*grad_b[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
+                                             );
                 }
                 for (uint j=0; j<n_u_dofs; j++)
                 {
@@ -584,11 +576,11 @@ void assemble_structure (EquationSystems& es,
         system.rhs->add_vector    (Fe, dof_indices);
     } // end of element loop
 
-    system.matrix->close();
-    system.matrix->print_matlab("mat.m");
+    //system.matrix->close();
+    //system.matrix->print_matlab("mat.m");
 
-    system.rhs->close();
-    system.rhs->print_matlab("rhs.m");
+    //system.rhs->close();
+    //system.rhs->print();
 
     // That's it.
     return;
