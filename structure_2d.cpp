@@ -90,13 +90,15 @@ int main (int argc, char** argv)
 
     uint const nx = param_file("nx", 60);
     uint const ny = param_file("ny", 4);
+    Real const ox = param_file("ox", 0.0);
+    Real const oy = param_file("oy", 0.0);
     Real const lx = param_file("lx", 3.0);
     Real const ly = param_file("ly", 0.2);
 
     MeshTools::Generation::build_square (mesh,
                                          nx, ny,
-                                         0., lx,
-                                         0., ly,
+                                         ox, lx,
+                                         oy, ly,
                                          QUAD9);
 
     //    XdrIO mesh_io(mesh);
@@ -140,9 +142,6 @@ int main (int argc, char** argv)
     system.attach_init_function (init_structure);
 
     std::string const output_file = param_file("output_file", "structure2d.e");
-
-    equation_systems.parameters.set<uint>("linear solver maximum iterations") = 250;
-    equation_systems.parameters.set<Real>        ("linear solver tolerance") = TOLERANCE;
 
     equation_systems.parameters.set<Real>("t_in") = param_file("t_in", 0.);
     equation_systems.parameters.set<Real>("t_out") = param_file("t_out", 2.0);
