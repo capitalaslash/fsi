@@ -144,8 +144,8 @@ int main (int argc, char** argv)
     std::string const output_file = param_file("output_file", "structure2d.e");
 
     equation_systems.parameters.set<Real>("t_in") = param_file("t_in", 0.);
-    equation_systems.parameters.set<Real>("t_out") = param_file("t_out", 2.0);
-    equation_systems.parameters.set<Real>("dt") = param_file("dt", 1.e-2);
+    equation_systems.parameters.set<Real>("t_out") = param_file("t_out", 0.2);
+    equation_systems.parameters.set<Real>("dt") = param_file("dt", 1.e-3);
 
     equation_systems.parameters.set<Real>("f_ux") = param_file("f_u", 0.);
     equation_systems.parameters.set<Real>("f_uy") = param_file("f_v", 1.);
