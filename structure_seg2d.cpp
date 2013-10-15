@@ -96,13 +96,15 @@ int main (int argc, char** argv)
 
     uint const nx = param_file("nx", 60);
     uint const ny = param_file("ny", 4);
+    Real const ox = param_file("ox", 0.0);
+    Real const oy = param_file("oy", 0.0);
     Real const lx = param_file("lx", 3.0);
     Real const ly = param_file("ly", 0.2);
 
     MeshTools::Generation::build_square (mesh,
                                          nx, ny,
-                                         0., lx,
-                                         0., ly,
+                                         ox, lx,
+                                         oy, ly,
                                          QUAD9);
 
     //    XdrIO mesh_io(mesh);
@@ -161,9 +163,6 @@ int main (int argc, char** argv)
 
     std::string const output_file = param_file("output_file", "structure_seg2d.e");
 
-    equation_systems.parameters.set<uint>("linear solver maximum iterations") = 250;
-    equation_systems.parameters.set<Real>        ("linear solver tolerance") = TOLERANCE;
-
     equation_systems.parameters.set<Real>("t_in") = param_file("t_in", 0.);
     equation_systems.parameters.set<Real>("t_out") = param_file("t_out", 0.2);
     equation_systems.parameters.set<Real>("dt") = param_file("dt", 1.e-3);
@@ -197,7 +196,7 @@ int main (int argc, char** argv)
     ExodusII_IO io (mesh);
     io.write_equation_systems (output_file, equation_systems);
     io.append(true);
-    //io.write_timestep (output_file, equation_systems, 0, system_vel.time);
+    io.write_timestep (output_file, equation_systems, 0, system_vel.time);
 #endif
 
     Real dt = equation_systems.parameters.get<Real>("dt");
@@ -207,7 +206,7 @@ int main (int argc, char** argv)
         timestep++;
         // Incremenet the time counter, set the time and the
         // time step size as parameters in the EquationSystem.
-        system_vel.time += dt;
+        system_vel .time += dt;
         system_dx.time += dt;
         system_dy.time += dt;
 
@@ -242,14 +241,12 @@ int main (int argc, char** argv)
         // vector assignment.  Since only \p TransientSystems
         // (and systems derived from them) contain old solutions
         // we need to specify the system type when we ask for it.
+        *system_vel.old_local_solution = *system_vel.current_local_solution;
         *system_dx .old_local_solution = *system_dx .current_local_solution;
         *system_dy .old_local_solution = *system_dy .current_local_solution;
 
         // Assemble & solve the linear system
         equation_systems.get_system("vel").solve();
-
-        *system_vel.old_local_solution = *system_vel.current_local_solution;
-
         equation_systems.get_system("dx").solve();
         equation_systems.get_system("dy").solve();
 
@@ -471,6 +468,12 @@ void assemble_disp (EquationSystems& es,
         system.rhs->add_vector    (Fe, dof_indices);
     } // end of element loop
 
+//    system.matrix->close();
+//    system.matrix->print_matlab("mat.m");
+
+    //    system.rhs->close();
+    //    system.rhs->print();
+
     // That's it.
     return;
 }
@@ -491,10 +494,9 @@ void assemble_vel (EquationSystems& es,
     // Get a reference to the Convection-Diffusion system object.
     TransientLinearImplicitSystem & system =
             es.get_system<TransientLinearImplicitSystem> ("vel");
-
-    TransientLinearImplicitSystem & system_dx =
+    TransientLinearImplicitSystem & system_d =
             es.get_system<TransientLinearImplicitSystem> ("dx");
-    TransientLinearImplicitSystem & system_dy =
+    TransientLinearImplicitSystem & system_e =
             es.get_system<TransientLinearImplicitSystem> ("dy");
 
     // Numeric ids corresponding to each variable in the system
@@ -502,14 +504,14 @@ void assemble_vel (EquationSystems& es,
     const uint v_var = system.variable_number ("uy");
     const uint p_var = system.variable_number ("p");
 
-    const uint dx_var = system_dx.variable_number ("dx");
-    const uint dy_var = system_dy.variable_number ("dy");
+    const uint d_var = system_d.variable_number ("dx");
+    const uint e_var = system_e.variable_number ("dy");
 
     // Get the Finite Element type for "u".  Note this will be
     // the same as the type for "v".
     FEType fe_u_type = system.variable_type(u_var);
     FEType fe_p_type = system.variable_type(p_var);
-    FEType fe_d_type = system_dx.variable_type(dx_var);
+    FEType fe_d_type = system_d.variable_type(d_var);
 
     // Build a Finite Element object of the specified type for
     // the velocity variables.
@@ -537,7 +539,6 @@ void assemble_vel (EquationSystems& es,
     const std::vector<std::vector<Real> >& phi = fe_u->get_phi();
     const std::vector<std::vector<RealGradient> >& grad_phi = fe_u->get_dphi();
     const std::vector<std::vector<Real> >& psi = fe_p->get_phi();
-    const std::vector<std::vector<Real> >& b = fe_d->get_phi();
     const std::vector<std::vector<RealGradient> >& grad_b = fe_d->get_dphi();
 
     // A reference to the \p DofMap object for this system.  The \p DofMap
@@ -545,8 +546,8 @@ void assemble_vel (EquationSystems& es,
     // to degree of freedom numbers.  We will talk more about the \p DofMap
     // in future examples.
     const DofMap & dof_map = system.get_dof_map();
-    const DofMap & dof_map_dx = system_dx.get_dof_map();
-    const DofMap & dof_map_dy = system_dy.get_dof_map();
+    const DofMap & dof_map_d = system_d.get_dof_map();
+    const DofMap & dof_map_e = system_e.get_dof_map();
 
     // Define data structures to contain the element matrix
     // and right-hand-side vector contribution.  Following
@@ -572,8 +573,8 @@ void assemble_vel (EquationSystems& es,
     std::vector<dof_id_type> dof_indices_u;
     std::vector<dof_id_type> dof_indices_v;
     std::vector<dof_id_type> dof_indices_p;
-    std::vector<dof_id_type> dof_indices_dx;
-    std::vector<dof_id_type> dof_indices_dy;
+    std::vector<dof_id_type> dof_indices_d;
+    std::vector<dof_id_type> dof_indices_e;
 
     // Now we will loop over all the elements in the mesh that
     // live on the local processor. We will compute the element
@@ -605,13 +606,13 @@ void assemble_vel (EquationSystems& es,
         dof_map.dof_indices (elem, dof_indices_u, u_var);
         dof_map.dof_indices (elem, dof_indices_v, v_var);
         dof_map.dof_indices (elem, dof_indices_p, p_var);
-        dof_map_dx.dof_indices (elem, dof_indices_dx, dx_var);
-        dof_map_dy.dof_indices (elem, dof_indices_dy, dy_var);
+        dof_map_d.dof_indices (elem, dof_indices_d, d_var);
+        dof_map_e.dof_indices (elem, dof_indices_e, e_var);
 
         const uint n_dofs   = dof_indices.size();
         const uint n_u_dofs = dof_indices_u.size();
         const uint n_p_dofs = dof_indices_p.size();
-        const uint n_d_dofs = dof_indices_dx.size();
+        const uint n_d_dofs = dof_indices_d.size();
 
         // Compute the element-specific data for the current
         // element.  This involves computing the location of the
@@ -664,52 +665,47 @@ void assemble_vel (EquationSystems& es,
         for (uint qp=0; qp<qrule.n_points(); qp++)
         {
             // compute old solution
+            Gradient grad_d_old;
+            Gradient grad_e_old;
+            for (uint l=0; l<n_d_dofs; l++)
+            {
+                grad_d_old.add_scaled (grad_b[l][qp],system_d.old_solution (dof_indices_d[l]));
+                grad_e_old.add_scaled (grad_b[l][qp],system_e.old_solution (dof_indices_e[l]));
+            }
+
             Number u_old = 0.;
             Number v_old = 0.;
-            Gradient grad_u_old;
-            Gradient grad_v_old;
             for (uint l=0; l<n_u_dofs; l++)
             {
                 u_old += phi[l][qp]*system.old_solution (dof_indices_u[l]);
                 v_old += phi[l][qp]*system.old_solution (dof_indices_v[l]);
-                grad_u_old.add_scaled (grad_phi[l][qp],system.old_solution (dof_indices_u[l]));
-                grad_v_old.add_scaled (grad_phi[l][qp],system.old_solution (dof_indices_v[l]));
-            }
-
-            Number dx_old = 0.;
-            Number dy_old = 0.;
-            Gradient grad_dx_old;
-            Gradient grad_dy_old;
-            for (uint l=0; l<n_d_dofs; l++)
-            {
-                dx_old += b[l][qp]*system_dx.old_solution (dof_indices_dx[l]);
-                dy_old += b[l][qp]*system_dy.old_solution (dof_indices_dy[l]);
-                grad_dx_old.add_scaled (grad_b[l][qp],system_dx.old_solution (dof_indices_dx[l]));
-                grad_dy_old.add_scaled (grad_b[l][qp],system_dy.old_solution (dof_indices_dy[l]));
             }
 
             for (uint i=0; i<n_u_dofs; i++)
             {
-//                Fu(i) += JxW[qp]*2.*phi[i][qp];
                 Fu(i) += JxW[qp]*( (u_old+dt*f_u)*phi[i][qp]
-//                                    + dt*(
-//                                           mu*( grad_phi[i][qp]*grad_dx_old
-//                                           + grad_phi[i][qp](0)*grad_dx_old(0) + grad_phi[i][qp](1)*grad_dy_old(0) )
-//                                           + lambda*( grad_phi[i][qp](0)*grad_dx_old(0)+grad_phi[i][qp](0)*grad_dy_old(1))
-//                                         )
-                                 );
+                                   - dt*(
+                                       mu*(
+                                           grad_phi[i][qp]*grad_d_old        // grad(d_old) : grad(v)
+                                           +grad_phi[i][qp](0)*grad_d_old(0) // grad(d_old)^T : grad(v)
+                                           +grad_phi[i][qp](1)*grad_e_old(0) // |
+                                          )
+                                       + lambda*(grad_phi[i][qp](0)*grad_d_old(0)+grad_phi[i][qp](0)*grad_e_old(1))) // stress2 tr(\eps(d_old))*tr(\eps(v))
+                                         );
                 for (uint j=0; j<n_u_dofs; j++)
                 {
-//                    Kuu(i,j) += JxW[qp]*phi[i][qp]*phi[j][qp];
-                    Kuu(i,j) += JxW[qp]*( phi[i][qp]*phi[j][qp]
-                                          + dt*dt*(
-                                                mu*( grad_phi[i][qp]*grad_phi[j][qp] + grad_phi[i][qp](0)*grad_phi[j][qp](0) ) // stress1 \eps(d):\eps(v)
-                                                + lambda*grad_phi[i][qp](0)*grad_phi[j][qp](0) // stress2 tr(\eps(d))*tr(\eps(v))
-                                               )
-                                        );
+                    Kuu(i,j) += JxW[qp]*( phi[i][qp]*phi[j][qp] +
+                                       dt*dt*(
+                                       mu*(
+                                           grad_phi[i][qp]*grad_phi[j][qp]        // grad(dt*u) : grad(v)
+                                           + grad_phi[i][qp](0)*grad_phi[j][qp](0) // grad(dt*u)^T : grad(v)
+                                       )
+                                       + lambda*grad_phi[i][qp](0)*grad_phi[j][qp](0) // stress2 tr(\eps(dt*u))*tr(\eps(v))
+                                       )
+                                       );
                     Kuv(i,j) += JxW[qp]*dt*dt*(
-                                mu*grad_phi[i][qp](1)*grad_phi[j][qp](0) // stress1 \eps(d):\eps(v)
-                                + lambda*grad_phi[i][qp](0)*grad_phi[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
+                                               mu*grad_phi[i][qp](1)*grad_phi[j][qp](0) // stress1 \eps(d):\eps(v)
+                                               + lambda*grad_phi[i][qp](0)*grad_phi[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
                                 );
                 }
 //                for (uint j=0; j<n_p_dofs; j++ )
@@ -718,25 +714,29 @@ void assemble_vel (EquationSystems& es,
 //                }
 
                 Fv(i) += JxW[qp]*( (v_old+dt*f_v)*phi[i][qp]
-//                                    + dt*(
-//                                           mu*( grad_phi[i][qp]*grad_dy_old
-//                                                + grad_phi[i][qp](0)*grad_dx_old(1)
-//                                                + grad_phi[i][qp](1)*grad_dy_old(1))
-//                                           + lambda*( grad_phi[i][qp](1)*grad_dx_old(0) + grad_phi[i][qp](1)*grad_dy_old(1) )
-//                                         )
-                                 );
+                                  - dt*(
+                                       mu*(
+                                           grad_phi[i][qp]*grad_e_old
+                                           + grad_phi[i][qp](0)*grad_d_old(1)
+                                           + grad_phi[i][qp](1)*grad_e_old(1)
+                                          )
+                                       + lambda*(grad_phi[i][qp](1)*grad_d_old(0)+grad_phi[i][qp](1)*grad_e_old(1)))
+                                    );
                 for (uint j=0; j<n_u_dofs; j++)
                 {
-                    Kuv(i,j) += JxW[qp]*dt*dt*(
-                                             mu*grad_phi[i][qp](0)*grad_phi[j][qp](1) // stress1 \eps(d):\eps(v)
-                                             + lambda*grad_phi[i][qp](1)*grad_phi[j][qp](0) // stress2 tr(\eps(d))*tr(\eps(v))
-                                           );
-                    Kvv(i,j) += JxW[qp]*( phi[i][qp]*phi[j][qp]
-                                          + dt*dt*(
-                                                mu*( grad_phi[i][qp]*grad_phi[j][qp] + grad_phi[i][qp](1)*grad_phi[j][qp](1) ) // stress1 \eps(d):\eps(v)
-                                                + lambda*grad_phi[i][qp](1)*grad_phi[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
-                                               )
-                                        );
+                    Kvu(i,j) += JxW[qp]*dt*dt*(
+                        mu*grad_phi[i][qp](0)*grad_phi[j][qp](1) // stress1 \eps(d):\eps(v)
+                        + lambda*grad_phi[i][qp](1)*grad_phi[j][qp](0) // stress2 tr(\eps(d))*tr(\eps(v))
+                                       );
+                    Kvv(i,j) += JxW[qp]*( phi[i][qp]*phi[j][qp] +
+                                       dt*dt*(
+                                              mu*(
+                                                  grad_phi[i][qp]*grad_phi[j][qp]  // stress1 \eps(d):\eps(v)
+                                                  + grad_phi[i][qp](1)*grad_phi[j][qp](1)
+                                       )
+                                    + lambda*grad_phi[i][qp](1)*grad_phi[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
+                                    )
+                                  );
                 }
 //                for (uint j=0; j<n_p_dofs; j++)
 //                {
@@ -766,15 +766,16 @@ void assemble_vel (EquationSystems& es,
         // for this element.  Add them to the global matrix and
         // right-hand-side vector.  The \p NumericMatrix::add_matrix()
         // and \p NumericVector::add_vector() members do this for us.
+
         system.matrix->add_matrix (Ke, dof_indices);
         system.rhs->add_vector    (Fe, dof_indices);
     } // end of element loop
 
-    system.matrix->close();
-    system.matrix->print_matlab("mat_seg.m");
+//    system.matrix->close();
+//    system.matrix->print_matlab("mat.m");
 
-    system.rhs->close();
-    system.rhs->print_matlab("rhs_seg.m");
+    //    system.rhs->close();
+    //    system.rhs->print();
 
     // That's it.
     return;
