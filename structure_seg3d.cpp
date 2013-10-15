@@ -154,7 +154,7 @@ int main (int argc, char** argv)
     std::vector<uint> vars_vel (3);
     vars_vel[0] = u_var;
     vars_vel[1] = v_var;
-    vars_vel[1] = w_var;
+    vars_vel[2] = w_var;
 
     ZeroFunction<Real> zero;
 
