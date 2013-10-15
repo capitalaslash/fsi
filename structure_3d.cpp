@@ -28,6 +28,7 @@
 
 // Basic include file needed for the mesh functionality.
 #include "libmesh/libmesh.h"
+#include "libmesh/getpot.h"
 #include "libmesh/mesh.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/exodusII_io.h"
@@ -87,11 +88,23 @@ int main (int argc, char** argv)
 
     Mesh mesh(init.comm());
 
+    GetPot param_file("param.dat");
+
+    uint const nx = param_file("nx", 15);
+    uint const ny = param_file("ny", 1);
+    uint const nz = param_file("nz", 1);
+    Real const ox = param_file("ox", 0.0);
+    Real const oy = param_file("oy", 0.0);
+    Real const oz = param_file("oz", 0.0);
+    Real const lx = param_file("lx", 3.0);
+    Real const ly = param_file("ly", 0.2);
+    Real const lz = param_file("lz", 0.2);
+
     MeshTools::Generation::build_cube (mesh,
-                                       60, 4, 4,
-                                       0., 3.0,
-                                       0., 0.2,
-                                       0., 0.2,
+                                       nx, ny, nz,
+                                       ox, lx,
+                                       oy, ly,
+                                       oz, lz,
                                        HEX20);
 
     //    XdrIO mesh_io(mesh);
@@ -120,12 +133,6 @@ int main (int argc, char** argv)
 
     std::set<boundary_id_type> zero_bc;
     zero_bc.insert(4); // left side
-
-//    std::vector<uint> vars (4);
-//    vars[0] = dx_var;
-//    vars[1] = dy_var;
-//    vars[2] = ux_var;
-//    vars[3] = uy_var;
 
     std::vector<uint> vars (6);
     vars[0] = dx_var;
@@ -157,24 +164,24 @@ int main (int argc, char** argv)
     stress.add_variable ("s_22", CONSTANT, MONOMIAL);
     stress.add_variable ("vonMises", CONSTANT, MONOMIAL);
 
-    std::string const output_file = "structure3d.e";
+    std::string const output_file = param_file("output_file", "structure3d.e");
 
-    equation_systems.parameters.set<uint>("linear solver maximum iterations") = 250;
-    equation_systems.parameters.set<Real>("linear solver tolerance") = TOLERANCE;
+    equation_systems.parameters.set<Real>("t_in") = param_file("t_in", 0.);
+    equation_systems.parameters.set<Real>("t_out") = param_file("t_out", 2.0);
+    equation_systems.parameters.set<Real>("dt") = param_file("dt", 1.e-2);
 
-    equation_systems.parameters.set<Real>("t_in") = 0.;
-    equation_systems.parameters.set<Real>("t_out") = 0.2;
-    equation_systems.parameters.set<Real>("dt") = 1.e-3;
+    equation_systems.parameters.set<Real>("f_ux") = param_file("f_u", 0.);
+    equation_systems.parameters.set<Real>("f_uy") = param_file("f_v", 0.);
+    equation_systems.parameters.set<Real>("f_uz") = param_file("f_w", 1.);
 
-    equation_systems.parameters.set<Real>("f_ux") = 0.;
-    equation_systems.parameters.set<Real>("f_uy") = 0.;
-    equation_systems.parameters.set<Real>("f_uz") = 1.;
-
-    Real const E = 1e8;
-    Real const ni = 0.3;
+    Real const E = param_file("E", 1e8);
+    Real const ni = param_file("ni", 0.3);
 
     equation_systems.parameters.set<Real>("mu") = E / ( 2.*(1.+ni) );
     equation_systems.parameters.set<Real>("lambda") = E*ni / ( (1.+ni)*(1.-2.*ni) );
+
+    equation_systems.parameters.set<uint>("linear solver maximum iterations") = 250;
+    equation_systems.parameters.set<Real>("linear solver tolerance") = TOLERANCE;
 
     //    PetscOptionsSetValue("-ksp_monitor_true_residual",PETSC_NULL);
 
