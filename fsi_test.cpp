@@ -82,6 +82,10 @@ Number init_zero (const Point& /*p*/,
     return 0.;
 }
 
+void move_mesh( Mesh & mesh,
+                AutoPtr<NumericVector<Number> > & dx,
+                AutoPtr<NumericVector<Number> > & dy );
+
 struct F
 {
     virtual Real operator() (Point const & p) = 0;
@@ -255,6 +259,8 @@ int main (int argc, char** argv)
         equation_systems.get_system("dx").solve();
         equation_systems.get_system("dy").solve();
 
+        move_mesh( mesh, system_dx.current_local_solution, system_dy.current_local_solution );
+
         // Output evey 1 timesteps to file.
         if ((timestep)%1 == 0)
         {
@@ -267,6 +273,20 @@ int main (int argc, char** argv)
     // All done.
     return 0;
 }
+
+void move_mesh( Mesh & mesh, AutoPtr<NumericVector<Number> > & dx, AutoPtr<NumericVector<Number> > & dy )
+{
+    MeshBase::node_iterator nd = mesh.local_nodes_begin();
+    const MeshBase::node_iterator end_nd = mesh.local_nodes_end();
+
+    for ( ; nd != end_nd; ++nd)
+    {
+        Node* node = *nd;
+        Real & x = node->operator()(0);
+        x += x;
+    }
+}
+
 
 void init_disp (EquationSystems& es,
                 const std::string& system_name)
