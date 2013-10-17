@@ -94,22 +94,31 @@ int main (int argc, char** argv)
 
     GetPot param_file("param.dat");
 
-    uint const nx = param_file("nx", 15);
-    uint const ny = param_file("ny", 1);
-    uint const nz = param_file("nz", 1);
-    Real const ox = param_file("ox", 0.0);
-    Real const oy = param_file("oy", 0.0);
-    Real const oz = param_file("oz", 0.0);
-    Real const lx = param_file("lx", 3.0);
-    Real const ly = param_file("ly", 0.2);
-    Real const lz = param_file("lz", 0.2);
+    std::string mesh_file = param_file ("mesh_file", "structured");
 
-    MeshTools::Generation::build_cube (mesh,
-                                       nx, ny, nz,
-                                       ox, lx,
-                                       oy, ly,
-                                       oz, lz,
-                                       HEX20);
+    if (mesh_file == "structured")
+    {
+        uint const nx = param_file("nx", 15);
+        uint const ny = param_file("ny", 1);
+        uint const nz = param_file("nz", 1);
+        Real const ox = param_file("ox", 0.0);
+        Real const oy = param_file("oy", 0.0);
+        Real const oz = param_file("oz", 0.0);
+        Real const lx = param_file("lx", 3.0);
+        Real const ly = param_file("ly", 0.2);
+        Real const lz = param_file("lz", 0.2);
+
+        MeshTools::Generation::build_cube (mesh,
+                                           nx, ny, nz,
+                                           ox, lx,
+                                           oy, ly,
+                                           oz, lz,
+                                           HEX20);
+    }
+    else
+    {
+        mesh.read (mesh_file);
+    }
 
     //    XdrIO mesh_io(mesh);
     //    mesh_io.read("one_tri.xda");
@@ -145,7 +154,7 @@ int main (int argc, char** argv)
     system_vel.add_variable ("p", FIRST);
 
     std::set<boundary_id_type> zero_bc;
-    zero_bc.insert(4); // left side
+    zero_bc.insert (4); // left side
 
     std::vector<uint> vars_dx (1, dx_var);
     std::vector<uint> vars_dy (1, dy_var);
