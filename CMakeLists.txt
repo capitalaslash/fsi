@@ -33,6 +33,12 @@ target_link_libraries(basic_test ${LIBMESH_LIBRARIES})
 add_executable(monomial_2d monomial_2d.cpp)
 target_link_libraries(monomial_2d ${LIBMESH_LIBRARIES})
 
+add_executable(bidomain bidomain.cpp)
+target_link_libraries(bidomain ${LIBMESH_LIBRARIES})
+
+add_executable(fsi_test fsi_test.cpp)
+target_link_libraries(fsi_test ${LIBMESH_LIBRARIES})
+
 add_executable(structure_static_2d structure_static_2d.cpp)
 target_link_libraries(structure_static_2d ${LIBMESH_LIBRARIES})
 
