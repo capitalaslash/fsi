@@ -1,6 +1,10 @@
 #! /usr/bin/python2
 
-dim = 3
+output_dir = 'output/mon'
+
+#mesh_file = 'hex2.xml'
+mesh_file = None
+dim = 2
 
 tin = 0.
 tout = 0.25
@@ -16,10 +20,11 @@ nz = 1
 E = 1e8
 ni = 0.3
 
+import os
 from dolfin import *
 
 def structure():
-  
+
   #parameters["form_compiler"]["optimize"]     = True
   #parameters["form_compiler"]["cpp_optimize"] = True
 
@@ -27,9 +32,11 @@ def structure():
   #mesh = UnitSquareMesh(n,n,"crossed")
   #mesh = UnitCubeMesh(4,4,4)
   #mesh = Mesh("beam2d.xml")
-  if(dim == 2):
+  if mesh_file is not None:
+    mesh = Mesh(mesh_file)
+  elif dim == 2:
     mesh = RectangleMesh(0., 0., lx, ly, nx, ny)
-  elif(dim == 3):
+  elif dim == 3:
     mesh = BoxMesh(0., 0., 0., lx, ly, lz, nx, ny, nz)
 
 
@@ -73,6 +80,7 @@ def structure():
 
   mu = Constant( E / 2*(1+ni) )
   lmbda = Constant( E*ni / (1+ni)*(1-2*ni) )
+  ilambda = 1. / lmbda
 
   def eps(v):
     return sym(grad(v))
@@ -91,7 +99,7 @@ def structure():
     + dt*2.*mu*inner(eps(d),eps(v))*dx \
     + dt*p*div(v)*dx \
     + dt*q*div(d)*dx \
-    - dt*(1./lmbda)*p*q*dx
+    - dt*ilambda*p*q*dx
 
   A = assemble(a)
   for bc in bcs:
@@ -105,13 +113,17 @@ def structure():
   #solver.set_operator(A)
   #solver.parameters['monitor_convergence']=True
 
-  dfile = File('d.pvd')
-  ufile = File('u.pvd')
+  if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+  file_d = File(output_dir + '/d.pvd')
+  file_u = File(output_dir + '/u.pvd')
+  file_p = File(output_dir + '/p.pvd')
 
   sol = Function(W)
   t = tin
-  dfile << (d_old,t)
-  ufile << (u_old,t)
+  file_d << (d_old,t)
+  file_u << (u_old,t)
+  file_p << (p_old,t)
   while t + dt < tout+DOLFIN_EPS:
     t += dt
     print "time = %f" % t
@@ -127,8 +139,11 @@ def structure():
     solve( A, sol.vector(), rhs)
 
     d_old, u_old, p_old = sol.split()
-    dfile << (d_old,t)
-    ufile << (u_old,t)
+    file_d << (d_old,t)
+    file_u << (u_old,t)
+    file_p << (p_old,t)
+
+    #print u_old.vector()
 
 if __name__ == '__main__':
   structure()
