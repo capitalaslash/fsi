@@ -99,13 +99,21 @@ int main (int argc, char** argv)
     Real const lx = param_file("lx", 3.0);
     Real const ly = param_file("ly", 0.2);
     Real const lz = param_file("lz", 0.2);
+    std::string const mesh_file = param_file("mesh_file", "structured");
 
-    MeshTools::Generation::build_cube (mesh,
-                                       nx, ny, nz,
-                                       ox, lx,
-                                       oy, ly,
-                                       oz, lz,
-                                       HEX20);
+    if (mesh_file == "structured")
+    {
+        MeshTools::Generation::build_cube (mesh,
+                                           nx, ny, nz,
+                                           ox, lx,
+                                           oy, ly,
+                                           oz, lz,
+                                           TET10);
+    }
+    else
+    {
+        mesh.read (mesh_file);
+    }
 
     //    XdrIO mesh_io(mesh);
     //    mesh_io.read("one_tri.xda");
