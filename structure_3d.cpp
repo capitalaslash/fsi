@@ -86,19 +86,23 @@ int main (int argc, char** argv)
     // Initialize libMesh.
     LibMeshInit init (argc, argv);
 
-    Mesh mesh(init.comm());
+    Mesh mesh(init.comm(), 3);
 
     GetPot param_file("param.dat");
 
-    uint const nx = param_file("nx", 15);
-    uint const ny = param_file("ny", 1);
-    uint const nz = param_file("nz", 1);
-    Real const ox = param_file("ox", 0.0);
-    Real const oy = param_file("oy", 0.0);
-    Real const oz = param_file("oz", 0.0);
-    Real const lx = param_file("lx", 3.0);
-    Real const ly = param_file("ly", 0.2);
-    Real const lz = param_file("lz", 0.2);
+    std::string mesh_file = param_file ("mesh_file", "structured");
+
+    if (mesh_file == "structured")
+    {
+        uint const nx = param_file("nx", 15);
+        uint const ny = param_file("ny", 1);
+        uint const nz = param_file("nz", 1);
+        Real const ox = param_file("ox", 0.0);
+        Real const oy = param_file("oy", 0.0);
+        Real const oz = param_file("oz", 0.0);
+        Real const lx = param_file("lx", 3.0);
+        Real const ly = param_file("ly", 0.2);
+        Real const lz = param_file("lz", 0.2);
     std::string const mesh_file = param_file("mesh_file", "structured");
 
     if (mesh_file == "structured")
@@ -108,7 +112,7 @@ int main (int argc, char** argv)
                                            ox, lx,
                                            oy, ly,
                                            oz, lz,
-                                           TET10);
+                                           HEX20);
     }
     else
     {
