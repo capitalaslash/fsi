@@ -32,6 +32,7 @@
 #include "libmesh/mesh.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/exodusII_io.h"
+#include "libmesh/vtk_io.h"
 #include "libmesh/xdr_io.h"
 #include "libmesh/gmsh_io.h"
 #include "libmesh/equation_systems.h"
@@ -208,6 +209,8 @@ int main (int argc, char** argv)
     io.append(true);
 #endif
 
+    AutoPtr<VTKIO> io_vtk = AutoPtr<VTKIO>(new VTKIO(mesh));
+
     Real dt = equation_systems.parameters.get<Real>("dt");
     Real t_out = equation_systems.parameters.get<Real>("t_out");
     while (system_vel.time + dt < t_out + 1e-12)
@@ -267,6 +270,12 @@ int main (int argc, char** argv)
 #ifdef LIBMESH_HAVE_EXODUS_API
             io.write_timestep (output_file, equation_systems, timestep, system_vel.time);
 #endif
+            std::stringstream file_name;
+            file_name << param_file("output_dir", "output/") << "fsi_test_";
+            file_name << std::setw(6) << std::setfill('0') << timestep;
+            file_name << ".pvtu";
+
+            io_vtk->write_equation_systems(file_name.str(), equation_systems);
         }
     }
 
