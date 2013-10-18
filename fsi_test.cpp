@@ -285,14 +285,37 @@ int main (int argc, char** argv)
 
 void move_mesh( Mesh & mesh, AutoPtr<NumericVector<Number> > & dx, AutoPtr<NumericVector<Number> > & dy )
 {
-    MeshBase::node_iterator nd = mesh.local_nodes_begin();
-    const MeshBase::node_iterator end_nd = mesh.local_nodes_end();
+//    MeshBase::node_iterator nd = mesh.local_nodes_begin();
+//    const MeshBase::node_iterator end_nd = mesh.local_nodes_end();
 
-    for ( ; nd != end_nd; ++nd)
+//    for ( ; nd != end_nd; ++nd)
+//    {
+//        Node* node = *nd;
+//        Real & x = node->operator()(0);
+//        x += .1*x;
+//    }
+
+    std::map<dof_id_type,bool> is_updated;
+
+    MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
+    const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
+
+    for ( ; el != end_el; ++el)
     {
-        Node* node = *nd;
-        Real & x = node->operator()(0);
-        x += x;
+        // Store a pointer to the element we are currently
+        // working on.  This allows for nicer syntax later.
+        const Elem* elem = *el;
+
+        for (uint n = 0; n < elem->n_nodes(); n++)
+        {
+            dof_id_type const & node_id = elem->node(n);
+            if (!is_updated[node_id])
+            {
+                Node & node = mesh.node(node_id);
+                node(0) += .1*node(0);
+                is_updated[node_id] = true;
+            }
+        }
     }
 }
 
