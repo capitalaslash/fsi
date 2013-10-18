@@ -179,8 +179,8 @@ int main (int argc, char** argv)
     std::string const output_file = param_file("output_file", "structure3d.e");
 
     equation_systems.parameters.set<Real>("t_in") = param_file("t_in", 0.);
-    equation_systems.parameters.set<Real>("t_out") = param_file("t_out", 2.0);
-    equation_systems.parameters.set<Real>("dt") = param_file("dt", 1.e-2);
+    equation_systems.parameters.set<Real>("t_out") = param_file("t_out", 0.2);
+    equation_systems.parameters.set<Real>("dt") = param_file("dt", 1.e-3);
 
     equation_systems.parameters.set<Real>("f_ux") = param_file("f_u", 0.);
     equation_systems.parameters.set<Real>("f_uy") = param_file("f_v", 0.);
@@ -552,17 +552,11 @@ void assemble_structure (EquationSystems& es,
             Number ux_old = 0.;
             Number uy_old = 0.;
             Number uz_old = 0.;
-//            Gradient grad_ux_old;
-//            Gradient grad_uy_old;
-//            Gradient grad_uz_old;
             for (uint l=0; l<n_u_dofs; l++)
             {
                 ux_old += v[l][qp]*system.old_solution (dof_indices_ux[l]);
                 uy_old += v[l][qp]*system.old_solution (dof_indices_uy[l]);
                 uz_old += v[l][qp]*system.old_solution (dof_indices_uz[l]);
-//                grad_ux_old.add_scaled (grad_v[l][qp],system.old_solution (dof_indices_ux[l]));
-//                grad_uy_old.add_scaled (grad_v[l][qp],system.old_solution (dof_indices_uy[l]));
-//                grad_uz_old.add_scaled (grad_v[l][qp],system.old_solution (dof_indices_uz[l]));
             }
 
             for (uint i=0; i<n_d_dofs; i++)
@@ -597,26 +591,7 @@ void assemble_structure (EquationSystems& es,
                     Kdzuz(i,j) += -JxW[qp]*dt*b[i][qp]*v[j][qp];
                 }
 
-                Fux(i) += JxW[qp]*
-                        (
-                            ( ux_old + dt*f_ux )*v[i][qp]
-                            - dt*
-                            (
-                                mu*
-                                (
-                                    grad_v[i][qp]*grad_dx_old          // grad(d_old) : grad(v)
-                                    + grad_v[i][qp](0)*grad_dx_old(0)  // grad(d_old)^T : grad(v)
-                                    + grad_v[i][qp](1)*grad_dy_old(0)  // |
-                                    + grad_v[i][qp](2)*grad_dz_old(0)  // |
-                                 )
-                                 + lambda*
-                                 (
-                                    grad_v[i][qp](0)*grad_dx_old(0)    // tr(eps(d_old)) * grad(v)_x
-                                    + grad_v[i][qp](0)*grad_dy_old(1)  // |
-                                    + grad_v[i][qp](0)*grad_dz_old(2)  // |
-                                 )
-                             )
-                        );
+                Fux(i) += JxW[qp]*( ux_old + dt*f_ux )*v[i][qp];
                 for (uint j=0; j<n_d_dofs; j++)
                 {
                     Kuxdx(i,j) += JxW[qp]*dt*(
@@ -646,16 +621,7 @@ void assemble_structure (EquationSystems& es,
 //                    Kuxp(i,j) += -JxW[qp]*dt*q[j][qp]*grad_v[i][qp](1);
 //                }
 
-                Fuy(i) += JxW[qp]*( ( uy_old + dt*f_uy )*v[i][qp]
-                                    - dt*( mu*( grad_v[i][qp]*grad_dy_old
-                                               + grad_v[i][qp](0)*grad_dx_old(1)
-                                               + grad_v[i][qp](1)*grad_dy_old(1)
-                                               + grad_v[i][qp](2)*grad_dz_old(1))
-                                              + lambda*(
-                                                    grad_v[i][qp](1)*grad_dx_old(0)
-                                                    + grad_v[i][qp](1)*grad_dy_old(1)
-                                                    + grad_v[i][qp](1)*grad_dz_old(2)))
-                                                       );
+                Fuy(i) += JxW[qp]*( uy_old + dt*f_uy )*v[i][qp];
                 for (uint j=0; j<n_d_dofs; j++)
                 {
                     Kuydx(i,j) += JxW[qp]*dt*(
@@ -683,16 +649,7 @@ void assemble_structure (EquationSystems& es,
 //                    Kuyp(i,j) += -JxW[qp]*dt*q[j][qp]*grad_v[i][qp](1);
 //                }
 
-                Fuz(i) += JxW[qp]*( ( uz_old + dt*f_uz )*v[i][qp]
-                                    - dt*( mu*( grad_v[i][qp]*grad_dz_old
-                                               + grad_v[i][qp](0)*grad_dx_old(2)
-                                               + grad_v[i][qp](1)*grad_dy_old(2)
-                                               + grad_v[i][qp](2)*grad_dz_old(2))
-                                              + lambda*(
-                                                    grad_v[i][qp](2)*grad_dx_old(0)
-                                                    + grad_v[i][qp](2)*grad_dy_old(1)
-                                                    + grad_v[i][qp](2)*grad_dz_old(2)))
-                                                       );
+                Fuz(i) += JxW[qp]*( uz_old + dt*f_uz )*v[i][qp];
                 for (uint j=0; j<n_d_dofs; j++)
                 {
                     Kuzdx(i,j) += JxW[qp]*dt*(
