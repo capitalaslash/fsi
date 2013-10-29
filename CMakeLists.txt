@@ -27,6 +27,30 @@ set(LIBS
   ${LIBMESH_LIBRARIES}
 )
 
+# optional: libxml2
+find_package(LibXml2)
+
+if(LIBXML2_FOUND)
+  option(FSI_HAS_LIBXML2 "use libxml2 library" ON)
+else()
+  option(FSI_HAS_LIBXML2 "use libxml2 library" OFF)
+endif()
+
+if(FSI_HAS_LIBXML2)
+  add_definitions(${LIBXML2_DEFINITIONS})
+  include_directories(${LIBXML2_INCLUDE_DIR})
+  set(LIBS ${LIBS} ${LIBXML2_LIBRARIES})
+endif()
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/FSIconfig.h.in"
+  "${CMAKE_BINARY_DIR}/FSIconfig.h"
+)
+install(FILES ${CMAKE_BINARY_DIR}/FSIconfig.h
+  DESTINATION include
+)
+include_directories(${CMAKE_BINARY_DIR})
+
 add_executable(basic_test basic_test.cpp)
 target_link_libraries(basic_test ${LIBMESH_LIBRARIES})
 

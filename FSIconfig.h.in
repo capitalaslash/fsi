@@ -1,0 +1,3 @@
+// use libxml2
+#cmakedefine FSI_HAS_LIBXML2
+
