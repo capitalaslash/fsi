@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(LibMeshApp CXX)
+project(FSI CXX)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
@@ -13,7 +13,6 @@ set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
 #link_directories(${MPI_CXX_LIBRARY_DIRS})
 
 find_package(LIBMESH REQUIRED)
-message(STATUS "libmesh_def = ${LIBMESH_DEFINITIONS}")
 add_definitions(${LIBMESH_DEFINITIONS})
 
 #string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UPPER)
@@ -21,8 +20,12 @@ add_definitions(${LIBMESH_DEFINITIONS})
 #  add_definitions(-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC)
 #endif()
 
-message(STATUS "LIBMESH_INCLUDE_DIRS = ${LIBMESH_INCLUDE_DIRS}")
+#message(STATUS "LIBMESH_INCLUDE_DIRS = ${LIBMESH_INCLUDE_DIRS}")
 include_directories(${LIBMESH_INCLUDE_DIRS})
+
+set(LIBS
+  ${LIBMESH_LIBRARIES}
+)
 
 add_executable(basic_test basic_test.cpp)
 target_link_libraries(basic_test ${LIBMESH_LIBRARIES})
@@ -37,7 +40,7 @@ add_executable(bidomain bidomain.cpp)
 target_link_libraries(bidomain ${LIBMESH_LIBRARIES})
 
 add_executable(fsi_test fsi_test.cpp)
-target_link_libraries(fsi_test ${LIBMESH_LIBRARIES})
+target_link_libraries(fsi_test ${LIBS})
 
 add_executable(structure_static_2d structure_static_2d.cpp)
 target_link_libraries(structure_static_2d ${LIBMESH_LIBRARIES})
