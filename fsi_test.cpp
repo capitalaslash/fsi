@@ -58,7 +58,7 @@
 #include "libmesh/elem.h"
 
 // extended VTK IO
-#include "extvtkio.hpp"
+#include "util/extvtkio.hpp"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;

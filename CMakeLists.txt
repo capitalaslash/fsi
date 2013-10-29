@@ -6,6 +6,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 set(CMAKE_CXX_FLAGS " -Wall -Wpedantic -std=c++11 ${CMAKE_CXX_FLAGS}")
 
+set(LIBS)
+
 find_package(MPI REQUIRED)
 set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
 #add_definitions(${MPI_CXX_COMPILE_FLAGS})
@@ -23,28 +25,7 @@ add_definitions(${LIBMESH_DEFINITIONS})
 #message(STATUS "LIBMESH_INCLUDE_DIRS = ${LIBMESH_INCLUDE_DIRS}")
 include_directories(${LIBMESH_INCLUDE_DIRS})
 
-set(HDRS
-  extvtkio.hpp
-)
-
-install(FILES ${HDRS}
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include
-)
-
-set(SRCS
-  extvtkio.cpp
-)
-
-add_library(util ${SRCS})
-
-install(TARGETS util
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-)
-
-set(LIBS
-  ${LIBMESH_LIBRARIES}
-  util
-)
+set(LIBS ${LIBS} ${LIBMESH_LIBRARIES})
 
 # optional: libxml2
 find_package(LibXml2)
@@ -68,7 +49,11 @@ configure_file(
 install(FILES ${CMAKE_BINARY_DIR}/FSIconfig.h
   DESTINATION include
 )
-include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR})
+
+add_subdirectory(util)
+
+set(LIBS ${LIBS} fsiutil)
 
 add_executable(basic_test basic_test.cpp)
 target_link_libraries(basic_test ${LIBMESH_LIBRARIES})
