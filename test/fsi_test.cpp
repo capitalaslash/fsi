@@ -59,6 +59,7 @@
 
 // extended VTK IO
 #include "util/extvtkio.hpp"
+#include "util/init.hpp"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
@@ -70,20 +71,6 @@ void assemble_fsi (EquationSystems& es,
 
 void assemble_disp (EquationSystems& es,
                     const std::string& system_name);
-
-void init_fsi (EquationSystems& es,
-                   const std::string& system_name);
-
-void init_disp (EquationSystems& es,
-                const std::string& system_name);
-
-Number init_zero (const Point& /*p*/,
-                   const Parameters& /*parameters*/,
-                   const std::string&,
-                   const std::string&)
-{
-    return 0.;
-}
 
 void move_mesh( EquationSystems& es );
 
@@ -159,13 +146,13 @@ int main (int argc, char** argv)
     system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( zero_bc, vars, &zero ) );
 
     system_dx.attach_assemble_function (assemble_disp);
-    system_dx.attach_init_function (init_disp);
+    system_dx.attach_init_function (init_zero);
 
     system_dy.attach_assemble_function (assemble_disp);
-    system_dy.attach_init_function (init_disp);
+    system_dy.attach_init_function (init_zero);
 
     system_vel.attach_assemble_function (assemble_fsi);
-    system_vel.attach_init_function (init_fsi);
+    system_vel.attach_init_function (init_zero);
 
     std::string const output_file = param_file("output_file", "fsi_test.e");
 
@@ -330,44 +317,6 @@ void move_mesh( EquationSystems& es )
             }
         }
     }
-}
-
-
-void init_disp (EquationSystems& es,
-                const std::string& system_name)
-{
-    // It is a good idea to make sure we are initializing
-    // the proper system.
-    if (! ((system_name == "dx") || (system_name == "dy")))
-    {
-        libmesh_error();
-    }
-
-    // Get a reference to the Convection-Diffusion system object.
-    TransientLinearImplicitSystem & system =
-            es.get_system<TransientLinearImplicitSystem>(system_name);
-
-    // Project initial conditions at time t_in
-    es.parameters.set<Real> ("time") = system.time = es.parameters.get<Real>("t_in");
-
-    system.project_solution(init_zero, NULL, es.parameters);
-}
-
-void init_fsi (EquationSystems& es,
-               const std::string& system_name)
-{
-    // It is a good idea to make sure we are initializing
-    // the proper system.
-    libmesh_assert_equal_to (system_name, "fsi");
-
-    // Get a reference to the Convection-Diffusion system object.
-    TransientLinearImplicitSystem & system =
-            es.get_system<TransientLinearImplicitSystem>("fsi");
-
-    // Project initial conditions at time t_in
-    es.parameters.set<Real> ("time") = system.time = es.parameters.get<Real>("t_in");
-
-    system.project_solution(init_zero, NULL, es.parameters);
 }
 
 void assemble_disp (EquationSystems& es,

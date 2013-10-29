@@ -59,22 +59,10 @@
 
 #include <petsc.h>
 
+#include "util/init.hpp"
+
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
-
-Number init_zero (const Point& /*p*/,
-                   const Parameters& /*parameters*/,
-                   const std::string&,
-                   const std::string&)
-{
-    return 0.;
-}
-
-void init_disp (EquationSystems& es,
-                const std::string& system_name);
-
-void init_vel (EquationSystems& es,
-               const std::string& system_name);
 
 // Function prototype.  This function will assemble the system
 // matrix and right-hand-side.
@@ -175,16 +163,16 @@ int main (int argc, char** argv)
     // Give the system a pointer to the matrix assembly
     // function.
     system_dx.attach_assemble_function (assemble_disp);
-    system_dx.attach_init_function (init_disp);
+    system_dx.attach_init_function (init_zero);
 
     system_dy.attach_assemble_function (assemble_disp);
-    system_dy.attach_init_function (init_disp);
+    system_dy.attach_init_function (init_zero);
 
     system_dz.attach_assemble_function (assemble_disp);
-    system_dz.attach_init_function (init_disp);
+    system_dz.attach_init_function (init_zero);
 
     system_vel.attach_assemble_function (assemble_vel);
-    system_vel.attach_init_function (init_vel);
+    system_vel.attach_init_function (init_zero);
 
     std::string const output_file = param_file("output_file", "structure_seg3d.e");
 
@@ -291,43 +279,6 @@ int main (int argc, char** argv)
 
     // All done.
     return 0;
-}
-
-void init_disp (EquationSystems& es,
-                const std::string& system_name)
-{
-    // It is a good idea to make sure we are initializing
-    // the proper system.
-    if (! ((system_name == "dx") || (system_name == "dy") || (system_name == "dz")))
-    {
-        libmesh_error();
-    }
-
-    // Get a reference to the Convection-Diffusion system object.
-    TransientLinearImplicitSystem & system =
-            es.get_system<TransientLinearImplicitSystem>(system_name);
-
-    // Project initial conditions at time t_in
-    es.parameters.set<Real> ("time") = system.time = es.parameters.get<Real>("t_in");
-
-    system.project_solution(init_zero, NULL, es.parameters);
-}
-
-void init_vel (EquationSystems& es,
-               const std::string& system_name)
-{
-    // It is a good idea to make sure we are initializing
-    // the proper system.
-    libmesh_assert_equal_to (system_name, "vel");
-
-    // Get a reference to the Convection-Diffusion system object.
-    TransientLinearImplicitSystem & system =
-            es.get_system<TransientLinearImplicitSystem>(system_name);
-
-    // Project initial conditions at time t_in
-    es.parameters.set<Real> ("time") = system.time = es.parameters.get<Real>("t_in");
-
-    system.project_solution(init_zero, NULL, es.parameters);
 }
 
 void assemble_disp (EquationSystems& es,

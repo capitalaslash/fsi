@@ -57,6 +57,8 @@
 // The definition of a geometric element
 #include "libmesh/elem.h"
 
+#include "util/init.hpp"
+
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
 
@@ -64,17 +66,6 @@ using namespace libMesh;
 // matrix and right-hand-side.
 void assemble_bi (EquationSystems& es,
                    const std::string& system_name);
-
-void init_bi (EquationSystems& es,
-                   const std::string& system_name);
-
-Number init_zero (const Point& /*p*/,
-                   const Parameters& /*parameters*/,
-                   const std::string&,
-                   const std::string&)
-{
-    return 0.;
-}
 
 struct F
 {
@@ -132,7 +123,7 @@ int main (int argc, char** argv)
     system.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( dirichlet_bc, vars, &zero ) );
 
     system.attach_assemble_function (assemble_bi);
-    system.attach_init_function (init_bi);
+    system.attach_init_function (init_zero);
 
     std::string const output_file = param_file("output_file", "bidomain.e");
 
@@ -230,23 +221,6 @@ int main (int argc, char** argv)
 
     // All done.
     return 0;
-}
-
-void init_bi (EquationSystems& es,
-               const std::string& system_name)
-{
-    // It is a good idea to make sure we are initializing
-    // the proper system.
-    libmesh_assert_equal_to (system_name, "bi");
-
-    // Get a reference to the Convection-Diffusion system object.
-    TransientLinearImplicitSystem & system =
-            es.get_system<TransientLinearImplicitSystem>("bi");
-
-    // Project initial conditions at time t_in
-    es.parameters.set<Real> ("time") = system.time = es.parameters.get<Real>("t_in");
-
-    system.project_solution(init_zero, NULL, es.parameters);
 }
 
 void assemble_bi (EquationSystems& es,
