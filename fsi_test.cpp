@@ -83,9 +83,7 @@ Number init_zero (const Point& /*p*/,
     return 0.;
 }
 
-void move_mesh( Mesh & mesh,
-                AutoPtr<NumericVector<Number> > & dx,
-                AutoPtr<NumericVector<Number> > & dy );
+void move_mesh( EquationSystems& es );
 
 struct F
 {
@@ -186,6 +184,8 @@ int main (int argc, char** argv)
     equation_systems.parameters.set<Real>("lambda") = E*ni / ( (1.+ni)*(1.-2.*ni) );
     equation_systems.parameters.set<Real>("mu_f") = param_file("mu_f", 1e-1);
 
+    equation_systems.parameters.set<Real>("ale_factor") = param_file ("ale_factor", 1e7);
+
     equation_systems.parameters.set<uint>("linear solver maximum iterations") = 250;
     equation_systems.parameters.set<Real>("linear solver tolerance") = TOLERANCE;
 
@@ -262,7 +262,7 @@ int main (int argc, char** argv)
         equation_systems.get_system("dx").solve();
         equation_systems.get_system("dy").solve();
 
-        move_mesh( mesh, system_dx.current_local_solution, system_dy.current_local_solution );
+        move_mesh( equation_systems );
 
         // Output evey 1 timesteps to file.
         if ((timestep)%1 == 0)
@@ -283,8 +283,10 @@ int main (int argc, char** argv)
     return 0;
 }
 
-void move_mesh( Mesh & mesh, AutoPtr<NumericVector<Number> > & dx, AutoPtr<NumericVector<Number> > & dy )
+void move_mesh( EquationSystems& es )
 {
+    MeshBase& mesh = es.get_mesh();
+
 //    MeshBase::node_iterator nd = mesh.local_nodes_begin();
 //    const MeshBase::node_iterator end_nd = mesh.local_nodes_end();
 
@@ -295,6 +297,20 @@ void move_mesh( Mesh & mesh, AutoPtr<NumericVector<Number> > & dx, AutoPtr<Numer
 //        x += .1*x;
 //    }
 
+    TransientLinearImplicitSystem & system_d =
+            es.get_system<TransientLinearImplicitSystem> ("dx");
+    TransientLinearImplicitSystem & system_e =
+            es.get_system<TransientLinearImplicitSystem> ("dy");
+
+    const uint d_var = system_d.variable_number ("dx");
+    const uint e_var = system_e.variable_number ("dy");
+    const DofMap & dof_map_d = system_d.get_dof_map();
+    const DofMap & dof_map_e = system_e.get_dof_map();
+    std::vector<dof_id_type> dof_indices_d;
+    std::vector<dof_id_type> dof_indices_e;
+
+    Real factor = es.parameters.get<Real> ("ale_factor");
+
     std::map<dof_id_type,bool> is_updated;
 
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
@@ -302,9 +318,10 @@ void move_mesh( Mesh & mesh, AutoPtr<NumericVector<Number> > & dx, AutoPtr<Numer
 
     for ( ; el != end_el; ++el)
     {
-        // Store a pointer to the element we are currently
-        // working on.  This allows for nicer syntax later.
         const Elem* elem = *el;
+
+        dof_map_d.dof_indices (elem, dof_indices_d, d_var);
+        dof_map_e.dof_indices (elem, dof_indices_e, e_var);
 
         for (uint n = 0; n < elem->n_nodes(); n++)
         {
@@ -312,7 +329,8 @@ void move_mesh( Mesh & mesh, AutoPtr<NumericVector<Number> > & dx, AutoPtr<Numer
             if (!is_updated[node_id])
             {
                 Node & node = mesh.node(node_id);
-                node(0) += .1*node(0);
+                node(0) += factor*system_d.current_solution (dof_indices_d[n]);
+                node(1) += factor*system_e.current_solution (dof_indices_e[n]);
                 is_updated[node_id] = true;
             }
         }
