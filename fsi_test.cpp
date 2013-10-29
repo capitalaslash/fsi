@@ -32,7 +32,6 @@
 #include "libmesh/mesh.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/exodusII_io.h"
-#include "libmesh/vtk_io.h"
 #include "libmesh/xdr_io.h"
 #include "libmesh/gmsh_io.h"
 #include "libmesh/equation_systems.h"
@@ -57,6 +56,9 @@
 
 // The definition of a geometric element
 #include "libmesh/elem.h"
+
+// extended VTK IO
+#include "extvtkio.hpp"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
@@ -120,21 +122,21 @@ int main (int argc, char** argv)
 
     mesh.print_info();
 
-    EquationSystems equation_systems (mesh);
+    EquationSystems es (mesh);
 
     // Declare the system and its variables.
     TransientLinearImplicitSystem & system_dx =
-            equation_systems.add_system<TransientLinearImplicitSystem> ("dx");
+            es.add_system<TransientLinearImplicitSystem> ("dx");
 
     const uint dx_var = system_dx.add_variable ("dx", SECOND);
 
     TransientLinearImplicitSystem & system_dy =
-            equation_systems.add_system<TransientLinearImplicitSystem> ("dy");
+            es.add_system<TransientLinearImplicitSystem> ("dy");
 
     const uint dy_var = system_dy.add_variable ("dy", SECOND);
 
     TransientLinearImplicitSystem & system_vel =
-            equation_systems.add_system<TransientLinearImplicitSystem> ("fsi");
+            es.add_system<TransientLinearImplicitSystem> ("fsi");
 
     const uint u_var = system_vel.add_variable ("ux", SECOND);
     const uint v_var = system_vel.add_variable ("uy", SECOND);
@@ -167,73 +169,64 @@ int main (int argc, char** argv)
 
     std::string const output_file = param_file("output_file", "fsi_test.e");
 
-    equation_systems.parameters.set<uint>("flag_s") = param_file("flag_s", 12);
-    equation_systems.parameters.set<uint>("flag_f") = param_file("flag_f", 11);
+    es.parameters.set<uint>("flag_s") = param_file("flag_s", 12);
+    es.parameters.set<uint>("flag_f") = param_file("flag_f", 11);
 
-    equation_systems.parameters.set<Real>("t_in") = param_file("t_in", 0.);
-    equation_systems.parameters.set<Real>("t_out") = param_file("t_out", 0.2);
-    equation_systems.parameters.set<Real>("dt") = param_file("dt", 1.e-3);
+    es.parameters.set<Real>("t_in") = param_file("t_in", 0.);
+    es.parameters.set<Real>("t_out") = param_file("t_out", 0.2);
+    es.parameters.set<Real>("dt") = param_file("dt", 1.e-3);
 
-    equation_systems.parameters.set<Real>("f_ux") = param_file("f_u", 1.);
-    equation_systems.parameters.set<Real>("f_uy") = param_file("f_v", 0.);
+    es.parameters.set<Real>("f_ux") = param_file("f_u", 1.);
+    es.parameters.set<Real>("f_uy") = param_file("f_v", 0.);
 
     Real const E = param_file("E", 1e8);
     Real const ni = param_file("ni", 0.3);
 
-    equation_systems.parameters.set<Real>("mu_s") = E / ( 2.*(1.+ni) );
-    equation_systems.parameters.set<Real>("lambda") = E*ni / ( (1.+ni)*(1.-2.*ni) );
-    equation_systems.parameters.set<Real>("mu_f") = param_file("mu_f", 1e-1);
+    es.parameters.set<Real>("mu_s") = E / ( 2.*(1.+ni) );
+    es.parameters.set<Real>("lambda") = E*ni / ( (1.+ni)*(1.-2.*ni) );
+    es.parameters.set<Real>("mu_f") = param_file("mu_f", 1e-1);
 
-    equation_systems.parameters.set<Real>("ale_factor") = param_file ("ale_factor", 1e7);
+    es.parameters.set<Real>("ale_factor") = param_file ("ale_factor", 1e7);
 
-    equation_systems.parameters.set<uint>("linear solver maximum iterations") = 250;
-    equation_systems.parameters.set<Real>("linear solver tolerance") = TOLERANCE;
+    es.parameters.set<uint>("linear solver maximum iterations") = 250;
+    es.parameters.set<Real>("linear solver tolerance") = TOLERANCE;
+
+    es.parameters.set<std::string>("output_dir") = param_file("output_dir", "output/");
+    es.parameters.set<std::string>("basename") = param_file("basename", "fsitest");
 
 //    PetscOptionsSetValue("-ksp_monitor_true_residual",PETSC_NULL);
 
     // Initialize the data structures for the equation system.
-    equation_systems.init ();
+    es.init ();
 
     // Prints information about the system to the screen.
-    equation_systems.print_info();
+    es.print_info();
 
-    system_vel.time   = equation_systems.parameters.get<Real>("t_in");
-    system_dx. time = equation_systems.parameters.get<Real>("t_in");
-    system_dy. time = equation_systems.parameters.get<Real>("t_in");
+    system_vel.time   = es.parameters.get<Real>("t_in");
+    system_dx. time = es.parameters.get<Real>("t_in");
+    system_dy. time = es.parameters.get<Real>("t_in");
     uint timestep = 0;
 
-#ifdef LIBMESH_HAVE_EXODUS_API
-    ExodusII_IO io (mesh);
-    io.write_equation_systems (output_file, equation_systems);
-    //io.write_timestep (output_file, equation_systems, 0, system.time);
-    io.append(true);
-#endif
+    AutoPtr<ExtVTKIO> io_vtk = AutoPtr<ExtVTKIO>(new ExtVTKIO(mesh,es.parameters));
 
-    AutoPtr<VTKIO> io_vtk = AutoPtr<VTKIO>(new VTKIO(mesh));
+    es.parameters.set<uint>("timestep") = timestep;
 
-    {
-        system (("mkdir -p " + std::string(param_file("output_dir", "output/"))).c_str());
-        std::stringstream file_name;
-        file_name << param_file("output_dir", "output/") << "fsi_test_";
-        file_name << std::setw(6) << std::setfill('0') << timestep;
-        file_name << ".pvtu";
+    io_vtk->write_solution(es);
 
-        io_vtk->write_equation_systems(file_name.str(), equation_systems);
-    }
-
-    Real dt = equation_systems.parameters.get<Real>("dt");
-    Real t_out = equation_systems.parameters.get<Real>("t_out");
+    Real dt = es.parameters.get<Real>("dt");
+    Real t_out = es.parameters.get<Real>("t_out");
     while (system_vel.time + dt < t_out + 1e-12)
     {
         timestep++;
+        es.parameters.set<uint>("timestep") = timestep;
         // Incremenet the time counter, set the time and the
         // time step size as parameters in the EquationSystem.
         system_vel.time += dt;
         system_dx.time += dt;
         system_dy.time += dt;
 
-        equation_systems.parameters.set<Real> ("time") = system_vel.time;
-        equation_systems.parameters.set<Real> ("dt")   = dt;
+        es.parameters.set<Real> ("time") = system_vel.time;
+        es.parameters.set<Real> ("dt")   = dt;
 
         // A pretty update message
         std::cout << " Solving time step ";
@@ -268,24 +261,16 @@ int main (int argc, char** argv)
         *system_dy .old_local_solution = *system_dy .current_local_solution;
 
         // Assemble & solve the linear system
-        equation_systems.get_system("fsi").solve();
-        equation_systems.get_system("dx").solve();
-        equation_systems.get_system("dy").solve();
+        es.get_system("fsi").solve();
+        es.get_system("dx").solve();
+        es.get_system("dy").solve();
 
-        move_mesh( equation_systems );
+        move_mesh( es );
 
         // Output evey 1 timesteps to file.
         if ((timestep)%1 == 0)
         {
-#ifdef LIBMESH_HAVE_EXODUS_API
-            io.write_timestep (output_file, equation_systems, timestep, system_vel.time);
-#endif
-            std::stringstream file_name;
-            file_name << param_file("output_dir", "output/") << "fsi_test_";
-            file_name << std::setw(6) << std::setfill('0') << timestep;
-            file_name << ".pvtu";
-
-            io_vtk->write_equation_systems(file_name.str(), equation_systems);
+            io_vtk->write_solution(es);
         }
     }
 
