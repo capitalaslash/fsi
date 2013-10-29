@@ -23,8 +23,27 @@ add_definitions(${LIBMESH_DEFINITIONS})
 #message(STATUS "LIBMESH_INCLUDE_DIRS = ${LIBMESH_INCLUDE_DIRS}")
 include_directories(${LIBMESH_INCLUDE_DIRS})
 
+set(HDRS
+  extvtkio.hpp
+)
+
+install(FILES ${HDRS}
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+)
+
+set(SRCS
+  extvtkio.cpp
+)
+
+add_library(util ${SRCS})
+
+install(TARGETS util
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+
 set(LIBS
   ${LIBMESH_LIBRARIES}
+  util
 )
 
 # optional: libxml2
