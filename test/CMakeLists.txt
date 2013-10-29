@@ -1,3 +1,19 @@
+#macro to copy a file to the binary dir
+macro(FSI_copy_file target filename)
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${filename}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${filename}
+    COMMAND ${CMAKE_COMMAND} ARGS -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${filename} ${CMAKE_CURRENT_BINARY_DIR}/${filename}
+  )
+
+  add_custom_target( ${target} ALL
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${filename}
+  )
+endmacro()
+
+FSI_copy_file(param_file param.dat)
+FSI_copy_file(mesh_quad-22 mesh/quad-22.msh)
+
 add_executable(basic_test basic_test.cpp)
 target_link_libraries(basic_test ${LIBMESH_LIBRARIES})
 
@@ -30,13 +46,3 @@ target_link_libraries(structure_seg2d ${LIBMESH_LIBRARIES})
 
 add_executable(structure_seg3d structure_seg3d.cpp)
 target_link_libraries(structure_seg3d ${LIBMESH_LIBRARIES})
-
-add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/param.dat
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/param.dat
-  COMMAND ${CMAKE_COMMAND} ARGS -E copy ${CMAKE_CURRENT_SOURCE_DIR}/param.dat ${CMAKE_CURRENT_BINARY_DIR}/param.dat
-)
-
-add_custom_target( param_file ALL
-  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/param.dat
-)
