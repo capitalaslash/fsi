@@ -211,6 +211,16 @@ int main (int argc, char** argv)
 
     AutoPtr<VTKIO> io_vtk = AutoPtr<VTKIO>(new VTKIO(mesh));
 
+    {
+        system (("mkdir -p " + std::string(param_file("output_dir", "output/"))).c_str());
+        std::stringstream file_name;
+        file_name << param_file("output_dir", "output/") << "fsi_test_";
+        file_name << std::setw(6) << std::setfill('0') << timestep;
+        file_name << ".pvtu";
+
+        io_vtk->write_equation_systems(file_name.str(), equation_systems);
+    }
+
     Real dt = equation_systems.parameters.get<Real>("dt");
     Real t_out = equation_systems.parameters.get<Real>("t_out");
     while (system_vel.time + dt < t_out + 1e-12)
