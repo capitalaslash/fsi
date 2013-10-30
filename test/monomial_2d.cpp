@@ -90,7 +90,7 @@ int main (int argc, char** argv)
     LinearImplicitSystem & system =
             equation_systems.add_system<LinearImplicitSystem> ("system");
 
-    const uint u_var = system.add_variable ("u", CONSTANT, MONOMIAL);
+    /*const uint u_var =*/ system.add_variable ("u", CONSTANT, MONOMIAL);
 
 //    std::set<boundary_id_type> dirichlet_bc;
 //    dirichlet_bc.insert(3); // left side
