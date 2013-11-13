@@ -11,9 +11,8 @@ set(SRCS
   init.cpp
 )
 
-add_library(fsiutil ${SRCS} ${LIBS})
+add_library(fsiutil ${SRCS})
 
 install(TARGETS fsiutil
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
-
