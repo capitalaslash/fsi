@@ -9,3 +9,4 @@ lx = 1.0
 ly = 1.0
 lz = 1.0
 
+mesh_file_bi = mesh/quad-22.msh

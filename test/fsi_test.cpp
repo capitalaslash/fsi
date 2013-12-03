@@ -129,21 +129,43 @@ int main (int argc, char** argv)
     const uint v_var = system_vel.add_variable ("uy", SECOND);
     system_vel.add_variable ("p", FIRST);
 
-    std::set<boundary_id_type> zero_bc;
-    zero_bc.insert(2); // right side
+    std::set<boundary_id_type> bc_right;
+    bc_right.insert(3);
+
+    std::set<boundary_id_type> bc_bottom_f;
+    bc_bottom_f.insert(1);
+
+    std::set<boundary_id_type> bc_bottom_s;
+    bc_bottom_s.insert(2);
+
+    std::set<boundary_id_type> bc_top_f;
+    bc_top_f.insert(5);
+
+    std::set<boundary_id_type> bc_top_s;
+    bc_top_s.insert(4);
 
     std::vector<uint> vars_dx (1, dx_var);
     std::vector<uint> vars_dy (1, dy_var);
 
-    std::vector<uint> vars (2);
-    vars[0] = u_var;
-    vars[1] = v_var;
+    std::vector<uint> vars_ux (1, u_var);
+    std::vector<uint> vars_uy (1, v_var);
+
+    std::vector<uint> vars_vel (2);
+    vars_vel[0] = u_var;
+    vars_vel[1] = v_var;
 
     ZeroFunction<Real> zero;
 
-    system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( zero_bc, vars_dx,  &zero ) );
-    system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( zero_bc, vars_dy,  &zero ) );
-    system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( zero_bc, vars, &zero ) );
+    system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_right, vars_dx,  &zero ) );
+//    system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_right, vars_dy,  &zero ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_right, vars_ux, &zero ) );
+
+    system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_bottom_f, vars_dy, &zero ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_bottom_f, vars_uy, &zero ) );
+
+//    system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_s, vars_dy, &zero ) );
+    system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_f, vars_dy, &zero ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_f, vars_uy, &zero ) );
 
     system_dx.attach_assemble_function (assemble_disp);
     system_dx.attach_init_function (init_zero);
@@ -163,7 +185,7 @@ int main (int argc, char** argv)
     es.parameters.set<Real>("t_out") = param_file("t_out", 0.2);
     es.parameters.set<Real>("dt") = param_file("dt", 1.e-3);
 
-    es.parameters.set<Real>("f_ux") = param_file("f_u", 1.);
+    es.parameters.set<Real>("f_ux") = param_file("f_u", 0.);
     es.parameters.set<Real>("f_uy") = param_file("f_v", 0.);
 
     Real const E = param_file("E", 1e8);
@@ -181,7 +203,7 @@ int main (int argc, char** argv)
     es.parameters.set<std::string>("output_dir") = param_file("output_dir", "output/");
     es.parameters.set<std::string>("basename") = param_file("basename", "fsitest");
 
-//    PetscOptionsSetValue("-ksp_monitor_true_residual",PETSC_NULL);
+    //    PetscOptionsSetValue("-ksp_monitor_true_residual",PETSC_NULL);
 
     // Initialize the data structures for the equation system.
     es.init ();
@@ -252,7 +274,7 @@ int main (int argc, char** argv)
         es.get_system("dx").solve();
         es.get_system("dy").solve();
 
-        move_mesh( es );
+        //move_mesh( es );
 
         // Output evey 1 timesteps to file.
         if ((timestep)%1 == 0)
@@ -269,15 +291,15 @@ void move_mesh( EquationSystems& es )
 {
     MeshBase& mesh = es.get_mesh();
 
-//    MeshBase::node_iterator nd = mesh.local_nodes_begin();
-//    const MeshBase::node_iterator end_nd = mesh.local_nodes_end();
+    //    MeshBase::node_iterator nd = mesh.local_nodes_begin();
+    //    const MeshBase::node_iterator end_nd = mesh.local_nodes_end();
 
-//    for ( ; nd != end_nd; ++nd)
-//    {
-//        Node* node = *nd;
-//        Real & x = node->operator()(0);
-//        x += .1*x;
-//    }
+    //    for ( ; nd != end_nd; ++nd)
+    //    {
+    //        Node* node = *nd;
+    //        Real & x = node->operator()(0);
+    //        x += .1*x;
+    //    }
 
     TransientLinearImplicitSystem & system_d =
             es.get_system<TransientLinearImplicitSystem> ("dx");
@@ -320,7 +342,7 @@ void move_mesh( EquationSystems& es )
 }
 
 void assemble_disp (EquationSystems& es,
-                         const std::string& system_name)
+                    const std::string& system_name)
 {
     // It is a good idea to make sure we are assembling
     // the proper system.
@@ -484,7 +506,6 @@ void assemble_disp (EquationSystems& es,
             {
                 for (uint i=0; i<n_d_dofs; i++)
                 {
-                    //Fe(i) += JxW[qp]*( d_old*b[i][qp] + dt*u_old*b[i][qp]);
                     for (uint j=0; j<n_d_dofs; j++)
                     {
                         Ke(i,j) += JxW[qp]*grad_b[i][qp]*grad_b[j][qp];
@@ -505,8 +526,8 @@ void assemble_disp (EquationSystems& es,
         system.rhs->add_vector    (Fe, dof_indices);
     } // end of element loop
 
-//    system.matrix->close();
-//    system.matrix->print_matlab("mat.m");
+    //    system.matrix->close();
+    //    system.matrix->print_matlab("mat.m");
 
     //    system.rhs->close();
     //    system.rhs->print();
@@ -564,6 +585,12 @@ void assemble_fsi (EquationSystems& es,
     fe_u->attach_quadrature_rule (&qrule);
     fe_p->attach_quadrature_rule (&qrule);
     fe_d->attach_quadrature_rule (&qrule);
+
+    AutoPtr<FEBase> fe_face (FEBase::build(dim, fe_u_type));
+
+    QGauss qface(dim-1, fe_u_type.default_quadrature_order());
+
+    fe_face->attach_quadrature_rule (&qface);
 
     // Here we define some references to cell-specific data that
     // will be used to assemble the linear system.
@@ -624,7 +651,8 @@ void assemble_fsi (EquationSystems& es,
     Real f_u = es.parameters.get<Real>("f_ux");
     Real f_v = es.parameters.get<Real>("f_uy");
     Real mu_s = es.parameters.get<Real>("mu_s");
-    Real ilambda = 1. / es.parameters.get<Real>("lambda");
+    Real lambda = es.parameters.get<Real>("lambda");
+    //Real ilambda = 1. / es.parameters.get<Real>("lambda");
     Real mu_f = es.parameters.get<Real>("mu_f");
 
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
@@ -730,64 +758,83 @@ void assemble_fsi (EquationSystems& es,
                 {
                     Fu(i) += JxW[qp]*(
                                 (u_old+dt*f_u)*phi[i][qp]
-                                - dt*mu_s*(
-                                        dphi[i][qp]*grad_d_old        // grad(d_old) : grad(v)
-                                        +dphi[i][qp](0)*grad_d_old(0) // grad(d_old)^T : grad(v)
-                                        +dphi[i][qp](1)*grad_e_old(0) // |
-                                       )
-                                );
+                                - dt*(
+                                    mu_s*(
+                                      dphi[i][qp]*grad_d_old        // grad(d_old) : grad(v)
+                                     +dphi[i][qp](0)*grad_d_old(0) // grad(d_old)^T : grad(v)
+                                     +dphi[i][qp](1)*grad_e_old(0) // |
+                                    )
+                                    + lambda*(dphi[i][qp](0)*grad_d_old(0)+dphi[i][qp](0)*grad_e_old(1)) // stress2 tr(\eps(d_old))*tr(\eps(v))
+                                    )
+                                  );
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kuu(i,j) += JxW[qp]*(
                                     phi[i][qp]*phi[j][qp] // mass matrix u*v/dt
-                                    + dt*dt*mu_s*(
+                                    + dt*dt*(
+                                      mu_s*(
                                         dphi[i][qp]*dphi[j][qp]
                                         + dphi[i][qp](0)*dphi[j][qp](0)
                                         )
+                                    + lambda*dphi[i][qp](0)*dphi[j][qp](0) // stress2 tr(\eps(dt*u))*tr(\eps(v))
+                                    )
+                                  );
+                        Kuv(i,j) += JxW[qp]*dt*dt*(
+                                    mu_s*dphi[i][qp](1)*dphi[j][qp](0)
+                                    + lambda*dphi[i][qp](0)*dphi[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
                                     );
-                        Kuv(i,j) += JxW[qp]*dt*dt*mu_s*dphi[i][qp](1)*dphi[j][qp](0);
                     }
-                    for (uint j=0; j<n_p_dofs; j++ )
-                    {
-                        Kup(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](0);
-                    }
+//                    for (uint j=0; j<n_p_dofs; j++ )
+//                    {
+//                        Kup(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](0);
+//                    }
 
                     Fv(i) += JxW[qp]*(
                                 (v_old+dt*f_v)*phi[i][qp]
-                                - dt*mu_s*(
-                                         dphi[i][qp]*grad_e_old
-                                         + dphi[i][qp](0)*grad_d_old(1)
-                                         + dphi[i][qp](1)*grad_e_old(1)
-                                        )
-                                );
+                                - dt*(
+                                    mu_s*(
+                                      dphi[i][qp]*grad_e_old
+                                      + dphi[i][qp](0)*grad_d_old(1)
+                                      + dphi[i][qp](1)*grad_e_old(1)
+                                    )
+                                    + lambda*(dphi[i][qp](1)*grad_d_old(0)+dphi[i][qp](1)*grad_e_old(1))
+                                    )
+                                  );
                     for (uint j=0; j<n_u_dofs; j++)
                     {
-                        Kvu(i,j) += JxW[qp]*dt*dt*mu_s*dphi[i][qp](0)*dphi[j][qp](1);
+                        Kvu(i,j) += JxW[qp]*dt*dt*(
+                                    mu_s*dphi[i][qp](0)*dphi[j][qp](1)
+                                    + lambda*dphi[i][qp](1)*dphi[j][qp](0) // stress2 tr(\eps(d))*tr(\eps(v))
+                                    );
                         Kvv(i,j) += JxW[qp]*(
                                     phi[i][qp]*phi[j][qp]
-                                    + dt*dt*mu_s*(
+                                    + dt*dt*(
+                                      mu_s*(
                                         dphi[i][qp]*dphi[j][qp]
                                         + dphi[i][qp](1)*dphi[j][qp](1)
                                         )
-                                        );
+                                      )
+                                    + lambda*dphi[i][qp](1)*dphi[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
+                                  );
                     }
-                    for (uint j=0; j<n_p_dofs; j++)
-                    {
-                        Kvp(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](1);
-                    }
+//                    for (uint j=0; j<n_p_dofs; j++)
+//                    {
+//                        Kvp(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](1);
+//                    }
                 }
                 for (uint i=0; i<n_p_dofs; i++)
                 {
-                    //                Kpp(i,i) = 1.;
-                    for (uint j=0; j<n_u_dofs; j++)
-                    {
-                        Kpu(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](0);
-                        Kpv(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](1);
-                    }
-                    for(uint j=0; j<n_p_dofs; j++)
-                    {
-                        Kpp(i,j) += -JxW[qp]*ilambda*psi[i][qp]*psi[j][qp];
-                    }
+
+                    Kpp(i,i) = 1.e-12;
+//                    for (uint j=0; j<n_u_dofs; j++)
+//                    {
+//                        Kpu(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](0);
+//                        Kpv(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](1);
+//                    }
+//                    for(uint j=0; j<n_p_dofs; j++)
+//                    {
+//                        Kpp(i,j) += -JxW[qp]*ilambda*psi[i][qp]*psi[j][qp];
+//                    }
                 }
             }
 
@@ -796,7 +843,7 @@ void assemble_fsi (EquationSystems& es,
             {
                 for (uint i=0; i<n_u_dofs; i++)
                 {
-                    Fu(i) = JxW[qp]*(u_old+f_u*dt)*phi[i][qp];
+                    Fu(i) += JxW[qp]*(u_old+f_u*dt)*phi[i][qp];
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kuu(i,j) += JxW[qp]*( phi[j][qp]*phi[i][qp]
@@ -804,15 +851,15 @@ void assemble_fsi (EquationSystems& es,
                                                   dphi[j][qp]*dphi[i][qp]
                                                   + dphi[j][qp](0)*dphi[i][qp](0)
                                                   )
-                                              );
-                         Kuv(i,j) += JxW[qp]*dt*mu_f*dphi[i][qp](1)*dphi[j][qp](0);
+                                                  );
+                                              Kuv(i,j) += JxW[qp]*dt*mu_f*dphi[i][qp](1)*dphi[j][qp](0);
                     }
                     for (uint j=0; j<n_p_dofs; j++ )
                     {
                         Kup(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](0);
                     }
 
-                    Fv(i) = JxW[qp]*(v_old+f_v*dt)*phi[i][qp];
+                    Fv(i) += JxW[qp]*(v_old+f_v*dt)*phi[i][qp];
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kvu(i,j) += JxW[qp]*dt*mu_f*dphi[i][qp](0)*dphi[j][qp](1);
@@ -821,7 +868,7 @@ void assemble_fsi (EquationSystems& es,
                                                   dphi[j][qp]*dphi[i][qp]
                                                   + dphi[j][qp](1)*dphi[i][qp](1)
                                                   )
-                                              );
+                                                  );
                     }
                     for (uint j=0; j<n_p_dofs; j++)
                     {
@@ -830,7 +877,7 @@ void assemble_fsi (EquationSystems& es,
                 }
                 for (uint i=0; i<n_p_dofs; i++)
                 {
-                    //                Kpp(i,i) = 1.;
+//                    Kpp(i,i) = 1.;
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kpu(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](0);
@@ -838,13 +885,55 @@ void assemble_fsi (EquationSystems& es,
                     }
                 }
             }
-            else
-            {
-                std::cerr << "elem subdomain not recognized!" << std::endl;
-                abort();
-            }
+//            else
+//            {
+//                std::cerr << "elem subdomain not recognized!" << std::endl;
+//                abort();
+//            }
 
         } // end of the quadrature point qp-loop
+
+        // loop on element sides
+        for (uint s=0; s<elem->n_sides(); s++)
+        {
+            // check if side in on boundary
+            if (elem->neighbor(s) == NULL)
+            {
+                if( mesh.boundary_info->has_boundary_id(elem, s, 6) ||
+                        mesh.boundary_info->has_boundary_id(elem, s, 2) ||
+                        mesh.boundary_info->has_boundary_id(elem, s, 4) )
+                {
+                // AutoPtr<Elem> side (elem->build_side(s));
+
+                    const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
+                    const std::vector<Real>& JxW_face = fe_face->get_JxW();
+                    // const std::vector<Point >& qface_point = fe_face->get_xyz();
+                    const std::vector<Point>& normals = fe_face->get_normals();
+
+                    fe_face->reinit(elem, s);
+
+                    for (uint qp=0; qp<qface.n_points(); qp++)
+                    {
+                        // const Real xf = qface_point[qp](0);
+                        // const Real yf = qface_point[qp](1);
+
+                        // const Real penalty = 1.e10;
+
+                        const Real value = 1.;
+
+                        // for (unsigned int i=0; i<phi_face.size(); i++)
+                        //   for (unsigned int j=0; j<phi_face.size(); j++)
+                        //     Kuu(i,j) += JxW_face[qp]*penalty*phi_face[i][qp]*phi_face[j][qp];
+
+                        for (uint i=0; i<phi_face.size(); i++)
+                        {
+                            Fu(i) -= JxW_face[qp]*dt*value*normals[qp](0)*phi_face[i][qp];
+                            Fv(i) -= JxW_face[qp]*dt*value*normals[qp](1)*phi_face[i][qp];
+                        }
+                    }
+                }
+            }
+        }
 
         // If this assembly program were to be used on an adaptive mesh,
         // we would have to apply any hanging node constraint equations.
@@ -858,11 +947,12 @@ void assemble_fsi (EquationSystems& es,
         system.rhs->add_vector    (Fe, dof_indices);
     } // end of element loop
 
-//    system.matrix->close();
-//    system.matrix->print_matlab("mat.m");
+    //system.matrix->close();
+    //system.matrix->print_matlab("mat.m");
 
-    //    system.rhs->close();
-    //    system.rhs->print();
+//    system.rhs->close();
+//    std::ofstream fout("rhs.txt");
+//    system.rhs->print(fout);
 
     // That's it.
     return;
