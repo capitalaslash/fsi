@@ -12,7 +12,10 @@ macro(FSI_copy_file target filename)
 endmacro()
 
 FSI_copy_file(param_file param.dat)
+FSI_copy_file(mesh_quad-2 mesh/quad-2.msh)
 FSI_copy_file(mesh_quad-22 mesh/quad-22.msh)
+FSI_copy_file(mesh_quad-2x10 mesh/quad-2x10.msh)
+FSI_copy_file(mesh_quad-2splx10 mesh/quad-2splx10.msh)
 
 add_executable(basic_test basic_test.cpp)
 target_link_libraries(basic_test ${LIBS})
