@@ -6,8 +6,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 set(CMAKE_CXX_FLAGS " -Wall -Wpedantic -std=c++11 ${CMAKE_CXX_FLAGS}")
 
-set(LIBS)
-
 find_package(MPI REQUIRED)
 set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
 #add_definitions(${MPI_CXX_COMPILE_FLAGS})
@@ -51,9 +49,24 @@ install(FILES ${CMAKE_BINARY_DIR}/FSIconfig.h
 )
 include_directories(${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR})
 
-add_subdirectory(util)
+set(HDRS
+  laplacian.hpp
+)
 
+set(SRCS
+  laplacian.cpp
+)
+
+add_library(fsibase ${SRCS})
+install(TARGETS fsibase
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+set(LIBS ${LIBS} fsibase)
+
+add_subdirectory(util)
 set(LIBS ${LIBS} fsiutil)
+
+message(STATUS "final set of libraries: ${LIBS}")
 
 add_subdirectory(test)
 

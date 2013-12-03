@@ -17,8 +17,8 @@ FSI_copy_file(mesh_quad-22 mesh/quad-22.msh)
 add_executable(basic_test basic_test.cpp)
 target_link_libraries(basic_test ${LIBS})
 
-#add_executable(stokes systems_of_equations_ex1.C)
-#target_link_libraries(stokes ${LIBS})
+add_executable(laplacian_test laplacian_test.cpp)
+target_link_libraries(laplacian_test ${LIBS})
 
 add_executable(monomial_2d monomial_2d.cpp)
 target_link_libraries(monomial_2d ${LIBS})
