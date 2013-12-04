@@ -40,8 +40,8 @@ void assemble_interface( EquationSystems & es, std::string const & name )
 
     AutoPtr<NumericVector<Real> > on_solid (NumericVector<Real>::build(es.comm()));
     AutoPtr<NumericVector<Real> > on_fluid (NumericVector<Real>::build(es.comm()));
-    on_solid->init( sys.n_dofs(), sys.n_local_dofs() );
-    on_fluid->init( sys.n_dofs(), sys.n_local_dofs() );
+    on_solid->init( sys.n_dofs(), sys.n_local_dofs(), false, PARALLEL );
+    on_fluid->init( sys.n_dofs(), sys.n_local_dofs(), false, PARALLEL );
 
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
     const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();

@@ -829,9 +829,13 @@ void assemble_fsi (EquationSystems& es,
                 }
                 for (uint i=0; i<n_p_dofs; i++)
                 {
-                    if ((*system_i.solution)(dof_indices_i[i]) < 0.5) // not on interface
+                    if((system_i.solution->first_local_index() <= dof_indices_i[i]) &&
+                            (dof_indices_i[i] < system_i.solution->last_local_index()))
                     {
-                        Kpp(i,i) = 1.;
+                        if ((*system_i.solution)(dof_indices_i[i]) < 0.5) // not on interface
+                        {
+                            Kpp(i,i) = 1.;
+                        }
                     }
 //                    for (uint j=0; j<n_u_dofs; j++)
 //                    {
