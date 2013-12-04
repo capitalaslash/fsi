@@ -3,7 +3,7 @@ set(HDRS
   init.hpp
 )
 install(FILES ${HDRS}
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/util
 )
 
 set(SRCS
