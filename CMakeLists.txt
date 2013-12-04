@@ -2,15 +2,21 @@ cmake_minimum_required(VERSION 2.8)
 
 project(FSI CXX)
 
+### cmake settings ###
+
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 set(CMAKE_CXX_FLAGS " -Wall -Wpedantic -std=c++11 ${CMAKE_CXX_FLAGS}")
+
+### mpi ###
 
 find_package(MPI REQUIRED)
 set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
 #add_definitions(${MPI_CXX_COMPILE_FLAGS})
 #include_directories(${MPI_CXX_INCLUDE_DIRS})
 #link_directories(${MPI_CXX_LIBRARY_DIRS})
+
+### libmesh ###
 
 find_package(LIBMESH REQUIRED)
 add_definitions(${LIBMESH_DEFINITIONS})
@@ -25,7 +31,8 @@ include_directories(${LIBMESH_INCLUDE_DIRS})
 
 set(LIBS ${LIBS} ${LIBMESH_LIBRARIES})
 
-# optional: libxml2
+### libxml2 (optional) ###
+
 find_package(LibXml2)
 
 if(LIBXML2_FOUND)
@@ -40,6 +47,8 @@ if(FSI_HAS_LIBXML2)
   set(LIBS ${LIBS} ${LIBXML2_LIBRARIES})
 endif()
 
+### config header ###
+
 configure_file(
   "${CMAKE_SOURCE_DIR}/FSIconfig.h.in"
   "${CMAKE_BINARY_DIR}/FSIconfig.h"
@@ -48,6 +57,8 @@ install(FILES ${CMAKE_BINARY_DIR}/FSIconfig.h
   DESTINATION include
 )
 include_directories(${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR})
+
+### fsibase ###
 
 set(HDRS
   laplacian.hpp
@@ -63,8 +74,12 @@ install(TARGETS fsibase
 )
 set(LIBS ${LIBS} fsibase)
 
+### fsiutil ###
+
 add_subdirectory(util)
 set(LIBS ${LIBS} fsiutil)
+
+### print config ###
 
 message(STATUS "final set of libraries: ${LIBS}")
 
