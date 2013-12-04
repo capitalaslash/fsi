@@ -74,6 +74,11 @@ install(TARGETS fsibase
 )
 set(LIBS ${LIBS} fsibase)
 
+### fsiassembly ###
+
+add_subdirectory(assembly)
+set(LIBS ${LIBS} fsiassembly)
+
 ### fsiutil ###
 
 add_subdirectory(util)
