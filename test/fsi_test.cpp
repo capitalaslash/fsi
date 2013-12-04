@@ -1,25 +1,3 @@
-/* The libMesh Finite Element Library. */
-/* Copyright (C) 2003  Benjamin S. Kirk */
-
-/* This library is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
-
-/* This library is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
-
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
-
-// <h1>Systems Example 1 - Stokes Equations</h1>
-//
-// This example shows how a simple, linear system of equations
-// can be solved in parallel.  The system of equations are the familiar
-// Stokes equations for low-speed incompressible fluid flow.
 
 // C++ include files that we need
 #include <iostream>
@@ -59,6 +37,9 @@
 
 // extended VTK IO
 #include "util/extvtkio.hpp"
+
+#include "assembly/mat.hpp"
+#include "assembly/interface.hpp"
 #include "util/init.hpp"
 
 // Bring in everything from the libMesh namespace
@@ -105,6 +86,7 @@ int main (int argc, char** argv)
     std::string mesh_file = param_file("mesh_file_bi", "mesh/quad-22.msh");
 
     Mesh mesh(init.comm(), 2);
+
     mesh.read(mesh_file);
 
     mesh.print_info();
@@ -128,6 +110,14 @@ int main (int argc, char** argv)
     const uint u_var = system_vel.add_variable ("ux", SECOND);
     const uint v_var = system_vel.add_variable ("uy", SECOND);
     system_vel.add_variable ("p", FIRST);
+
+    ExplicitSystem & system_mat =
+            es.add_system<ExplicitSystem>("mat");
+    system_mat.add_variable("mat", CONSTANT, MONOMIAL);
+
+    ExplicitSystem & system_int =
+            es.add_system<ExplicitSystem>("interface");
+    system_int.add_variable("interface", SECOND, LAGRANGE);
 
     std::set<boundary_id_type> bc_right;
     bc_right.insert(3);
@@ -207,6 +197,10 @@ int main (int argc, char** argv)
 
     // Initialize the data structures for the equation system.
     es.init ();
+
+    assemble_mat( es, "mat" );
+
+    assemble_interface( es, "interface");
 
     // Prints information about the system to the screen.
     es.print_info();
@@ -436,6 +430,9 @@ void assemble_disp (EquationSystems& es,
 
     Real dt = es.parameters.get<Real>("dt");
 
+    uint const flag_s = es.parameters.get<uint>("flag_s");
+    uint const flag_f = es.parameters.get<uint>("flag_f");
+
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
     const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
 
@@ -489,7 +486,7 @@ void assemble_disp (EquationSystems& es,
             }
 
             // solid domain
-            if (elem->subdomain_id() == es.parameters.get<uint>("flag_s"))
+            if (elem->subdomain_id() == flag_s)
             {
                 for (uint i=0; i<n_d_dofs; i++)
                 {
@@ -502,7 +499,7 @@ void assemble_disp (EquationSystems& es,
             }
 
             // fluid domain
-            else if (elem->subdomain_id() == es.parameters.get<uint>("flag_f"))
+            else if (elem->subdomain_id() == flag_f)
             {
                 for (uint i=0; i<n_d_dofs; i++)
                 {
@@ -556,6 +553,8 @@ void assemble_fsi (EquationSystems& es,
             es.get_system<TransientLinearImplicitSystem> ("dx");
     TransientLinearImplicitSystem & system_e =
             es.get_system<TransientLinearImplicitSystem> ("dy");
+    ExplicitSystem & system_i =
+            es.get_system<ExplicitSystem>("interface");
 
     // Numeric ids corresponding to each variable in the system
     const uint u_var = system.variable_number ("ux");
@@ -612,6 +611,7 @@ void assemble_fsi (EquationSystems& es,
     const DofMap & dof_map = system.get_dof_map();
     const DofMap & dof_map_d = system_d.get_dof_map();
     const DofMap & dof_map_e = system_e.get_dof_map();
+    const DofMap & dof_map_i = system_i.get_dof_map();
 
     // Define data structures to contain the element matrix
     // and right-hand-side vector contribution.  Following
@@ -639,6 +639,7 @@ void assemble_fsi (EquationSystems& es,
     std::vector<dof_id_type> dof_indices_p;
     std::vector<dof_id_type> dof_indices_d;
     std::vector<dof_id_type> dof_indices_e;
+    std::vector<dof_id_type> dof_indices_i;
 
     // Now we will loop over all the elements in the mesh that
     // live on the local processor. We will compute the element
@@ -654,6 +655,9 @@ void assemble_fsi (EquationSystems& es,
     Real lambda = es.parameters.get<Real>("lambda");
     //Real ilambda = 1. / es.parameters.get<Real>("lambda");
     Real mu_f = es.parameters.get<Real>("mu_f");
+
+    uint const flag_s = es.parameters.get<uint>("flag_s");
+    uint const flag_f = es.parameters.get<uint>("flag_f");
 
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
     const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
@@ -674,6 +678,7 @@ void assemble_fsi (EquationSystems& es,
         dof_map.dof_indices (elem, dof_indices_p, p_var);
         dof_map_d.dof_indices (elem, dof_indices_d, d_var);
         dof_map_e.dof_indices (elem, dof_indices_e, e_var);
+        dof_map_i.dof_indices (elem, dof_indices_i, 0);
 
         const uint n_dofs   = dof_indices.size();
         const uint n_u_dofs = dof_indices_u.size();
@@ -752,7 +757,7 @@ void assemble_fsi (EquationSystems& es,
             }
 
             // solid domain
-            if (elem->subdomain_id() == es.parameters.get<uint>("flag_s"))
+            if (elem->subdomain_id() == flag_s)
             {
                 for (uint i=0; i<n_u_dofs; i++)
                 {
@@ -824,8 +829,10 @@ void assemble_fsi (EquationSystems& es,
                 }
                 for (uint i=0; i<n_p_dofs; i++)
                 {
-
-                    Kpp(i,i) = 1.e-12;
+                    if ((*system_i.solution)(dof_indices_i[i]) < 0.5) // not on interface
+                    {
+                        Kpp(i,i) = 1.;
+                    }
 //                    for (uint j=0; j<n_u_dofs; j++)
 //                    {
 //                        Kpu(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](0);
@@ -839,7 +846,7 @@ void assemble_fsi (EquationSystems& es,
             }
 
             // fluid domain
-            else if (elem->subdomain_id() == es.parameters.get<uint>("flag_f"))
+            else if (elem->subdomain_id() == flag_f)
             {
                 for (uint i=0; i<n_u_dofs; i++)
                 {
@@ -947,8 +954,8 @@ void assemble_fsi (EquationSystems& es,
         system.rhs->add_vector    (Fe, dof_indices);
     } // end of element loop
 
-    //system.matrix->close();
-    //system.matrix->print_matlab("mat.m");
+//    system.matrix->close();
+//    system.matrix->print_matlab("mat.m");
 
 //    system.rhs->close();
 //    std::ofstream fout("rhs.txt");
