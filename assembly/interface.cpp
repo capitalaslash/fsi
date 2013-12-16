@@ -17,7 +17,7 @@ void assemble_interface( EquationSystems & es, std::string const & name )
 
     const MeshBase& mesh = es.get_mesh();
 
-    const uint dim = mesh.mesh_dimension();
+//    const uint dim = mesh.mesh_dimension();
 
     ExplicitSystem & sys = es.get_system<ExplicitSystem> (name);
 
@@ -25,11 +25,11 @@ void assemble_interface( EquationSystems & es, std::string const & name )
 
     const DofMap& dof_map = sys.get_dof_map();
 
-    FEType fe_type = sys.variable_type(var);
+//    FEType fe_type = sys.variable_type(var);
 
-    AutoPtr<FEBase> fe (FEBase::build(dim, fe_type));
-    QGauss qrule (dim, fe_type.default_quadrature_order());
-    fe->attach_quadrature_rule (&qrule);
+//    AutoPtr<FEBase> fe (FEBase::build(dim, fe_type));
+//    QGauss qrule (dim, fe_type.default_quadrature_order());
+//    fe->attach_quadrature_rule (&qrule);
 
     std::vector<dof_id_type> dof_indices_var;
 
@@ -50,7 +50,7 @@ void assemble_interface( EquationSystems & es, std::string const & name )
     {
         const Elem* elem = *el;
 
-        fe->reinit(elem);
+//        fe->reinit(elem);
 
         dof_map.dof_indices (elem, dof_indices_var, var);
 
@@ -83,9 +83,6 @@ void assemble_interface( EquationSystems & es, std::string const & name )
     for( ; el != end_el; ++el )
     {
         const Elem* elem = *el;
-
-        fe->reinit(elem);
-
         dof_map.dof_indices (elem, dof_indices_var, var);
 
         elem_value.resize(dof_indices_var.size());
