@@ -146,16 +146,23 @@ int main (int argc, char** argv)
 
     ZeroFunction<Real> zero;
 
-    system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_right, vars_dx,  &zero ) );
-//    system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_right, vars_dy,  &zero ) );
+    // RIGHT
+    system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_right, vars_dx, &zero ) );
     system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_right, vars_ux, &zero ) );
 
+    // BOTTOM_FLUID
+    //system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_bottom_f, vars_dx, &zero ) );
     system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_bottom_f, vars_dy, &zero ) );
     system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_bottom_f, vars_uy, &zero ) );
 
-//    system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_s, vars_dy, &zero ) );
+    // TOP_FLUID
+    //system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_f, vars_dx, &zero ) );
     system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_f, vars_dy, &zero ) );
     system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_f, vars_uy, &zero ) );
+
+    // LEFT
+    //system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_left, vars_dx, &zero ) );
+    //system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_left, vars_dy, &zero ) );
 
     system_dx.attach_assemble_function (assemble_disp);
     system_dx.attach_init_function (init_zero);
@@ -165,8 +172,6 @@ int main (int argc, char** argv)
 
     system_vel.attach_assemble_function (assemble_fsi);
     system_vel.attach_init_function (init_zero);
-
-    std::string const output_file = param_file("output_file", "fsi_test.e");
 
     es.parameters.set<uint>("flag_s") = param_file("flag_s", 12);
     es.parameters.set<uint>("flag_f") = param_file("flag_f", 11);
@@ -205,7 +210,7 @@ int main (int argc, char** argv)
     // Prints information about the system to the screen.
     es.print_info();
 
-    system_vel.time   = es.parameters.get<Real>("t_in");
+    system_vel.time = es.parameters.get<Real>("t_in");
     system_dx. time = es.parameters.get<Real>("t_in");
     system_dy. time = es.parameters.get<Real>("t_in");
     uint timestep = 0;
@@ -553,22 +558,18 @@ void assemble_fsi (EquationSystems& es,
             es.get_system<TransientLinearImplicitSystem> ("dx");
     TransientLinearImplicitSystem & system_e =
             es.get_system<TransientLinearImplicitSystem> ("dy");
-    ExplicitSystem & system_i =
-            es.get_system<ExplicitSystem>("interface");
+    ExplicitSystem & system_i = es.get_system<ExplicitSystem>("interface");
 
     // Numeric ids corresponding to each variable in the system
     const uint u_var = system.variable_number ("ux");
     const uint v_var = system.variable_number ("uy");
     const uint p_var = system.variable_number ("p");
 
-    const uint d_var = system_d.variable_number ("dx");
-    const uint e_var = system_e.variable_number ("dy");
-
     // Get the Finite Element type for "u".  Note this will be
     // the same as the type for "v".
     FEType fe_u_type = system.variable_type(u_var);
     FEType fe_p_type = system.variable_type(p_var);
-    FEType fe_d_type = system_d.variable_type(d_var);
+    FEType fe_d_type = system_d.variable_type(0);
 
     // Build a Finite Element object of the specified type for
     // the velocity variables.
@@ -676,8 +677,8 @@ void assemble_fsi (EquationSystems& es,
         dof_map.dof_indices (elem, dof_indices_u, u_var);
         dof_map.dof_indices (elem, dof_indices_v, v_var);
         dof_map.dof_indices (elem, dof_indices_p, p_var);
-        dof_map_d.dof_indices (elem, dof_indices_d, d_var);
-        dof_map_e.dof_indices (elem, dof_indices_e, e_var);
+        dof_map_d.dof_indices (elem, dof_indices_d, 0);
+        dof_map_e.dof_indices (elem, dof_indices_e, 0);
         dof_map_i.dof_indices (elem, dof_indices_i, 0);
 
         const uint n_dofs   = dof_indices.size();
