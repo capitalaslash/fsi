@@ -56,6 +56,11 @@ void assemble_disp (EquationSystems& es,
 
 void move_mesh( EquationSystems& es );
 
+Real external_pressure( Point const & /*point*/, Parameters const & /*param*/ )
+{
+    return 1.;
+}
+
 struct F
 {
     virtual Real operator() (Point const & p) = 0;
@@ -924,7 +929,7 @@ void assemble_fsi (EquationSystems& es,
 
                     const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
                     const std::vector<Real>& JxW_face = fe_face->get_JxW();
-                    // const std::vector<Point >& qface_point = fe_face->get_xyz();
+                    const std::vector<Point >& qface_point = fe_face->get_xyz();
                     const std::vector<Point>& normals = fe_face->get_normals();
 
                     fe_face->reinit(elem, s);
@@ -936,7 +941,7 @@ void assemble_fsi (EquationSystems& es,
 
                         // const Real penalty = 1.e10;
 
-                        const Real value = 1.;
+                        const Real value = external_pressure( qface_point[qp], es.parameters );
 
                         // for (unsigned int i=0; i<phi_face.size(); i++)
                         //   for (unsigned int j=0; j<phi_face.size(); j++)
