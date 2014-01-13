@@ -12,6 +12,7 @@
 #include "libmesh/exodusII_io.h"
 #include "libmesh/xdr_io.h"
 #include "libmesh/gmsh_io.h"
+#include "libmesh/gmv_io.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/fe.h"
 #include "libmesh/quadrature_gauss.h"
@@ -217,6 +218,8 @@ int main (int argc, char** argv)
 
     AutoPtr<ExtVTKIO> io_vtk = AutoPtr<ExtVTKIO>(new ExtVTKIO(mesh,es.parameters));
 
+    AutoPtr<GMVIO> io_gmv = AutoPtr<GMVIO>( new GMVIO(mesh) );
+
     es.parameters.set<uint>("timestep") = timestep;
 
     io_vtk->write_solution(es);
@@ -281,6 +284,8 @@ int main (int argc, char** argv)
             io_vtk->write_solution(es);
         }
     }
+
+    io_gmv->write_equation_systems("output.gmv", es);
 
     // All done.
     return 0;
