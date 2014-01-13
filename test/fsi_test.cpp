@@ -369,10 +369,9 @@ void assemble_disp (EquationSystems& es,
     // Get a reference to the disp system object.
     TransientLinearImplicitSystem & system =
             es.get_system<TransientLinearImplicitSystem> (system_name);
-
-    // Get a reference to the disp system object.
     TransientLinearImplicitSystem & system_vel =
             es.get_system<TransientLinearImplicitSystem> ("fsi");
+    ExplicitSystem & system_i = es.get_system<ExplicitSystem>("interface");
 
     // Numeric ids corresponding to each variable in the system
     const uint d_var = system.variable_number (system_name);
@@ -421,6 +420,7 @@ void assemble_disp (EquationSystems& es,
     // in future examples.
     const DofMap & dof_map = system.get_dof_map();
     const DofMap & dof_map_vel = system_vel.get_dof_map();
+    const DofMap & dof_map_i = system_i.get_dof_map();
 
     // Define data structures to contain the element matrix
     // and right-hand-side vector contribution.  Following
@@ -435,6 +435,7 @@ void assemble_disp (EquationSystems& es,
     std::vector<dof_id_type> dof_indices;
     std::vector<dof_id_type> dof_indices_d;
     std::vector<dof_id_type> dof_indices_u;
+    std::vector<dof_id_type> dof_indices_i;
 
     // Now we will loop over all the elements in the mesh that
     // live on the local processor. We will compute the element
@@ -464,6 +465,7 @@ void assemble_disp (EquationSystems& es,
         dof_map.dof_indices (elem, dof_indices);
         dof_map.dof_indices (elem, dof_indices_d, d_var);
         dof_map_vel.dof_indices (elem, dof_indices_u, u_var);
+        dof_map_i.dof_indices (elem, dof_indices_i, 0);
 
         const uint n_dofs   = dof_indices.size();
         const uint n_d_dofs = dof_indices_d.size();
@@ -518,9 +520,16 @@ void assemble_disp (EquationSystems& es,
             {
                 for (uint i=0; i<n_d_dofs; i++)
                 {
-                    for (uint j=0; j<n_d_dofs; j++)
+                    if((system_i.solution->first_local_index() <= dof_indices_i[i]) &&
+                            (dof_indices_i[i] < system_i.solution->last_local_index()))
                     {
-                        Ke(i,j) += JxW[qp]*grad_b[i][qp]*grad_b[j][qp];
+                        if ((*system_i.solution)(dof_indices_i[i]) < 0.5) // not on interface
+                        {
+                            for (uint j=0; j<n_d_dofs; j++)
+                            {
+                                Ke(i,j) += JxW[qp]*grad_b[i][qp]*grad_b[j][qp];
+                            }
+                        }
                     }
                 }
             }
