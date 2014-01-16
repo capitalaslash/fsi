@@ -6,7 +6,7 @@ project(FSI CXX)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
-set(CMAKE_CXX_FLAGS " -Wall -Wpedantic -std=c++11 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wpedantic -Wdisabled-optimization ${CMAKE_CXX_FLAGS}")
 
 ### mpi ###
 
@@ -29,6 +29,7 @@ add_definitions(${LIBMESH_DEFINITIONS})
 #message(STATUS "LIBMESH_INCLUDE_DIRS = ${LIBMESH_INCLUDE_DIRS}")
 include_directories(${LIBMESH_INCLUDE_DIRS})
 
+#message(STATUS "LIBMESH_LIBRARIES = ${LIBMESH_LIBRARIES}")
 set(LIBS ${LIBS} ${LIBMESH_LIBRARIES})
 
 ### libxml2 (optional) ###
@@ -87,6 +88,7 @@ set(LIBS ${LIBS} fsiutil)
 ### print config ###
 
 message(STATUS "final set of libraries: ${LIBS}")
+message(STATUS "CXXFLAGS:               ${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(test)
 
