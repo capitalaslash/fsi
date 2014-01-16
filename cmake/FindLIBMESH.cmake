@@ -12,6 +12,8 @@ message(STATUS "linking against ${METHOD} libmesh library")
 
 find_package(PkgConfig QUIET)
 
+set(LIBMESH_DIR NOTFOUND CACHE PATH "Libmesh installtion directory")
+
 if(LIBMESH_DIR)
   set(ENV{PKG_CONFIG_PATH} ${LIBMESH_DIR}/etc/libmesh)
 endif()
