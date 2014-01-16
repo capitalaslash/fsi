@@ -10,7 +10,7 @@ else()
 endif()
 message(STATUS "linking against ${METHOD} libmesh library")
 
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 
 if(LIBMESH_DIR)
   set(ENV{PKG_CONFIG_PATH} ${LIBMESH_DIR}/etc/libmesh)
