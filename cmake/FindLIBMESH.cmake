@@ -67,11 +67,16 @@ foreach( IPATH ${LMC_INC_LIST} )
 endforeach()
 set(LIBMESH_INCLUDE_DIRS ${LM_INC})
 
+if(PC_LIBMESH_VERSION)
+  set(LIBMESH_VERSION_STRING ${PC_LIBMESH_VERSION})
+endif()
 
+# handle the QUIETLY and REQUIRED arguments and set LIBMESH_FOUND to TRUE if
+# all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(LIBMESH DEFAULT_MSG
-  LIBMESH_LIBRARY LIBMESH_INCLUDE_DIR
+find_package_handle_standard_args(LIBMESH
+  REQUIRED_VARS LIBMESH_LIBRARIES LIBMESH_INCLUDE_DIR
+  VERSION_VAR LIBMESH_VERSION_STRING
 )
 
-mark_as_advanced(LIBMESH_INCLUDE_DIR LIBMESH_LIBRARY)
-
+mark_as_advanced(LIBMESH_INCLUDE_DIR LIBMESH_LIBRARIES LIBMESH_CONFIG_EXECUTABLE)
