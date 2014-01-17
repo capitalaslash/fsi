@@ -2,7 +2,7 @@
 // C++ include files that we need
 #include <iostream>
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 
 // Basic include file needed for the mesh functionality.
 #include "libmesh/libmesh.h"
