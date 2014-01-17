@@ -90,5 +90,6 @@ set(LIBS ${LIBS} fsiutil)
 message(STATUS "final set of libraries: ${LIBS}")
 message(STATUS "CXXFLAGS:               ${CMAKE_CXX_FLAGS}")
 
+include(CTest)
 add_subdirectory(test)
 

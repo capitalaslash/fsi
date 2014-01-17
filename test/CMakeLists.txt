@@ -19,6 +19,7 @@ FSI_copy_file(mesh_quad-2splx10 mesh/quad-2splx10.msh)
 
 add_executable(basic_test basic_test.cpp)
 target_link_libraries(basic_test ${LIBS})
+add_test(test1 basic_test)
 
 add_executable(laplacian_test laplacian_test.cpp)
 target_link_libraries(laplacian_test ${LIBS})
