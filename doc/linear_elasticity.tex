@@ -1,0 +1,233 @@
+\documentclass{scrartcl}
+
+\usepackage[math]{kurier}
+\usepackage[T1]{fontenc}
+\renewcommand*{\familydefault}{\sfdefault}
+\usepackage{array}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\newcommand{\vect}[1]{\boldsymbol{#1}}
+\newcommand{\ten}[1]{\boldsymbol{#1}}
+\DeclareMathOperator{\trace}{tr}
+\DeclareMathOperator{\sym}{sym}
+\newcommand{\tr}{^\intercal}
+\newcommand{\dff}{\:\mathrm{d}}
+
+\begin{document}
+
+\section{Definitions}
+
+\begin{tabular}{>{$}r<{$}l}
+\hline
+\vect{d} & displacement \\
+\vect{u} & velocity \\
+\vect{\nabla} & del operator \\
+\hline
+\end{tabular}
+\vspace*{2em}
+
+dyadic product
+\[
+\ten{a b} = \vect{a} \vect{b}\tr = (a_i b_j)
+\]
+
+Frobenius product
+\[
+\ten{\alpha} : \ten{\beta} = \sum_{i,j} \alpha_{ij} \beta_{ij}
+\]
+
+derivatives
+\[
+u_{i,j} = \frac{\partial u_i}{\partial x_j}
+\]
+
+\[
+\ten{\epsilon}(\vect{u}) = \sym(\ten{\nabla u}) = 
+\frac{1}{2}(\ten{\nabla u} + \ten{\nabla u}\tr)
+\]
+
+\[
+\trace(\ten{\epsilon}(\vect{u})) = \vect{\nabla} \cdot \vect{u}
+\]
+
+inner products
+\begin{align*}
+(a,b) &= \int_{\Omega} a b \dff\Omega \\
+(\vect{a},\vect{b}) &= \int_{\Omega} \vect{a} \cdot \vect{b} \dff\Omega \\
+(\ten{\alpha},\ten{\beta}) &= \int_{\Omega} \ten{\alpha} : \ten{\beta} \dff\Omega
+\end{align*}
+
+\section{Linear Elasticity}
+\[
+\ten{\sigma} = 2 \mu \ten{\epsilon} + \lambda \trace(\ten{\epsilon}) \ten{I}
+\]
+
+strong form
+\[
+\ddot{\vect{d}} - \vect{\nabla} \cdot \ten{\sigma}(\vect{d}) = \vect{f}
+\]
+
+weak form
+\[
+(\ddot{\vect{d}},\vect{b}) + (\ten{\sigma}(\vect{d}),\ten{\epsilon}(\vect{b})) =
+(\vect{f},\vect{b}) \qquad \forall \vect{b} \in \vect{V}
+\]
+
+strong form
+\begin{align*}
+\dot{\vect{d}} - \vect{u} = 0 \\
+\dot{\vect{u}} - \vect{\nabla} \cdot \ten{\sigma}(\vect{d}) = \vect{f}
+\end{align*}
+
+weak form
+\begin{align*}
+&(\dot{\vect{d}},\vect{b}) - (\vect{u},\vect{b}) = 0 & &\forall \vect{b} \in \vect{V} \\
+&(\dot{\vect{u}},\vect{v}) + (\ten{\sigma}(\vect{d}),\ten{\epsilon}(\vect{v})) =
+(\vect{f},\vect{v}) & &\forall \vect{v} \in \vect{V}
+\end{align*}
+
+time discretization
+\begin{align*}
+&\left(\frac{\vect{d}}{\Delta t},\vect{b}\right) - (\vect{u},\vect{b}) =
+\left(\frac{\vect{d}_0}{\Delta t},\vect{b} \right) & &\forall \vect{b} \in \vect{V} \\
+&\left(\frac{\vect{u}}{\Delta t},\vect{v}\right) + (\ten{\sigma}(\vect{d}),\ten{\epsilon}(\vect{v})) =
+\left(\frac{\vect{u}_0}{\Delta t} + \vect{f},\vect{v}\right) & &\forall \vect{v} \in \vect{V}
+\end{align*}
+
+\begin{align*}
+&(\vect{d},\vect{b}) - \Delta t (\vect{u},\vect{b}) =
+(\vect{d}_0,\vect{b}) & &\forall \vect{b} \in \vect{V} \\
+&(\vect{u},\vect{v}) + \Delta t(\ten{\sigma}(\vect{d}),\ten{\epsilon}(\vect{v})) =
+(\vect{u}_0 + \Delta t\vect{f},\vect{v}) & &\forall \vect{v} \in \vect{V}
+\end{align*}
+
+\begin{align*}
+&(\vect{d},\vect{b}) - \Delta t (\vect{u},\vect{b}) =
+(\vect{d}_0,\vect{b}) & &\forall \vect{b} \in \vect{V} \\
+&(\vect{u},\vect{v}) + \Delta t^2 (\ten{\sigma}(\vect{u}),\ten{\epsilon}(\vect{v})) =
+(\vect{u}_0 + \Delta t\vect{f},\vect{v}) - \Delta t (\ten{\sigma}(\vect{d_0}),\ten{\epsilon}(\vect{v}))
+& &\forall \vect{v} \in \vect{V}
+\end{align*}
+
+\[
+(\ten{\sigma}(\vect{u}),\ten{\epsilon}(\vect{v})) = 
+2\mu (\ten{\epsilon}(\vect{u}),\ten{\epsilon}(\vect{v})) +
+\lambda (\trace(\ten{\epsilon}(\vect{u})),\trace(\ten{\epsilon}(\vect{v})))
+\]
+
+\subsection{2D Cartesian coordinates}
+
+\[
+\ten{\nabla u} =
+\begin{pmatrix}
+u_{0,0} & u_{1,0} \\
+u_{0,1} & u_{1,1}
+\end{pmatrix}
+\]
+
+\[
+\ten{\epsilon}(\vect{u}) =
+\begin{pmatrix}
+u_{0,0} & \frac{1}{2}(u_{1,0} + u_{0,1}) \\
+\frac{1}{2}(u_{1,0} + u_{0,1}) & u_{1,1}
+\end{pmatrix}
+\]
+
+\[
+\vect{\nabla} \cdot \vect{u} = u_{0,0} + u_{1,1}
+\]
+
+\begin{align*}
+2(\ten{\epsilon}(\vect{u}), \ten{\epsilon}(\vect{v})) =& \\
+&2 u_{0,0} v_{0,0} + u_{0,1} v_{0,1} \\
+&+ u_{1,0} v_{0,1} \\
+&+ u_{0,1} v_{1,0} \\
+&+ u_{1,0} v_{1,0} + 2 u_{1,1} v_{1,1}
+\end{align*}
+
+\begin{align*}
+(\vect{\nabla} \cdot \vect{u}, \vect{\nabla} \cdot \vect{v}) =& \\
+& u_{0,0} v_{0,0} \\
+&+ u_{1,1} v_{0,0} \\
+&+ u_{0,0} v_{1,1} \\
+&+ u_{1,1} v_{1,1}
+\end{align*}
+
+\subsection{Cylindrical coordinates}
+
+coordinates
+\begin{align*}
+&r = x_0 & &\theta = x_1 & &z = x_2
+\end{align*}
+
+time derivative
+\[
+\dot{\vect{u}} = ( \dot{u}_0 - u_1 \dot{x}_1, \dot{u}_1 
++ u_0 \dot{x}_1, \dot{u}_2 )
+\]
+
+strain tensor
+\[
+\ten{\epsilon}(\vect{u}) = 
+\begin{pmatrix}
+u_{0,0} & \frac{1}{2}(\frac{1}{x_0}u_{0,1} + u_{1,0} + \frac{1}{x_0}u_1) &
+\frac{1}{2}(u_{0,2} + u_{2,0}) \\
+\frac{1}{2}(\frac{1}{x_0}u_{0,1} + u_{1,0} + \frac{1}{x_0}u_1 &
+\frac{1}{x_0}(u_{1,1} + u_0) & \frac{1}{2}(u_{1,2} + \frac{1}{x_0}u_{2,1}) \\
+\frac{1}{2}(u_{0,2} + u_{2,0}) & \frac{1}{2}(u_{1,2} + \frac{1}{x_0}u_{2,1}) &
+u_{2,2} 
+\end{pmatrix}
+\]
+
+divergence
+\[
+\vect{\nabla} \cdot \vect{u} = u_{0,0} + \frac{1}{x_0}u_0 + \frac{1}{x_0}u_{1,1}
++ u_{2,2}
+\]
+
+\subsubsection{axisymmetry}
+
+\begin{align*}
+&\theta = 0 & &f_{,1} = 0 & & z = x_1
+\end{align*}
+
+time derivative
+\[
+\dot{\vect{u}} = ( \dot{u}_0, \dot{u}_1 )
+\]
+
+strain tensor
+\[
+\ten{\epsilon}(\vect{u}) = 
+\begin{pmatrix}
+u_{0,0} & 0 & \frac{1}{2}(u_{0,1} + u_{1,0}) \\
+0 & \frac{1}{x_0}u_0 & 0 \\
+\frac{1}{2}(u_{0,1} + u_{1,0}) & 0 & u_{1,1} 
+\end{pmatrix}
+\]
+
+divergence
+\[
+\vect{\nabla} \cdot \vect{u} = u_{0,0} + \frac{1}{x_0}u_0 + u_{1,1}
+\]
+
+\begin{align*}
+2(\ten{\epsilon}(\vect{u}), \ten{\epsilon}(\vect{v})) =& \\
+&\frac{2}{x_0^2}u_0 v_0 + 2 u_{0,0} v_{0,0} + u_{0,1} v_{0,1} \\
+&+ u_{1,0} v_{0,1} \\
+&+ u_{0,1} v_{1,0} \\
+&+ u_{1,0} v_{1,0} + 2 u_{1,1} v_{1,1}
+\end{align*}
+
+\begin{align*}
+(\vect{\nabla} \cdot \vect{u}, \vect{\nabla} \cdot \vect{v}) =& \\
+& u_{0,0} v_{0,0} + \frac{1}{x_0} u_0 v_{0,0} 
++ \frac{1}{x_0} u_{0,0} v_0 + \frac{1}{x_0^2} u_0 v_0 \\
+&+ u_{1,1} v_{0,0} + \frac{1}{x_0} u_{1,1} v_0 \\
+&+ u_{0,0} v_{1,1} + \frac{1}{x_0} u_0 v_{1,1} \\
+&+ u_{1,1} v_{1,1}
+\end{align*}
+
+\end{document}
+
