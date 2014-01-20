@@ -794,22 +794,20 @@ void assemble_fsi (EquationSystems& es,
                                 (u_old+dt*f_u)*phi[i][qp]
                                 - dt*(
                                     mu_s*(
-                                        2.*dphi[i][qp](0)*grad_d_old(0) //(A)
-                                        + invR2* dphi[i][qp](0)*grad_d_old(1) //(B)
-                                        + invR2* phi[i][qp]*d_old //(N)
-                                        + invR* dphi[i][qp](1) * grad_e_old(0) //(E)
-                                        - invR2* dphi[i][qp](1) * e_old //(H)
-                                        + 2*invR2* phi[i][qp] * grad_e_old(1) //(L)
-                                    )
+                                        2.*dphi[i][qp](0)*grad_d_old(0)
+                                        + dphi[i][qp](1)*grad_d_old(1)
+                                        + dphi[i][qp](1)*grad_e_old(0)
+                                        + 2.*invR2 * phi[i][qp]*d_old
+                                        )
                                     + lambda*(
-                                            dphi[i][qp](0)*grad_d_old(0) //(1)
-                                            + invR* phi[i][qp]*grad_d_old(0) //(2)
-                                            + invR* dphi[i][qp](0)*d_old //(3)
-                                            + invR2* phi[i][qp]*d_old //(4)
-                                            + invR* dphi[i][qp](0)*grad_e_old(1) //(5)
-                                            + invR2* phi[i][qp]*grad_e_old(1) //(6)
+                                            dphi[i][qp](0)*grad_d_old(0)
+                                            + invR* phi[i][qp]*grad_d_old(0)
+                                            + invR* dphi[i][qp](0)*d_old
+                                            + invR2* phi[i][qp]*d_old
+                                            + dphi[i][qp](0)*grad_e_old(1)
+                                            + invR* phi[i][qp]*grad_e_old(1)
                                             )
-                                    )
+                                     )
                                   );
                     for (uint j=0; j<n_u_dofs; j++)
                     {
@@ -817,27 +815,25 @@ void assemble_fsi (EquationSystems& es,
                                     phi[i][qp]*phi[j][qp] // mass matrix u*v/dt
                                     + dt*dt*(
                                       mu_s*(
-                                            2.*dphi[i][qp](0)*dphi[j][qp](0) //(A)
-                                            + invR2* dphi[i][qp](0)*dphi[j][qp](1) //(B)
-                                            + invR2* phi[i][qp]*phi[j][qp] //(N)
+                                            2.*dphi[i][qp](0)*dphi[j][qp](0)
+                                            + dphi[i][qp](1)*dphi[j][qp](1)
+                                            + 2.*invR2* phi[i][qp]*phi[j][qp]
                                     )
                                     + lambda*(
-                                        dphi[i][qp](0)*dphi[j][qp](0) //(1)
-                                        + invR* phi[i][qp]*dphi[j][qp](0) //(2)
-                                        + invR* dphi[i][qp](0)*phi[j][qp] //(3)
-                                        + invR2* phi[i][qp]*phi[j][qp] //(4)
+                                        dphi[i][qp](0)*dphi[j][qp](0)
+                                        + invR* phi[i][qp]*dphi[j][qp](0)
+                                        + invR* dphi[i][qp](0)*phi[j][qp]
+                                        + invR2* phi[i][qp]*phi[j][qp]
                                           )
                                     )
                                   );
                         Kuv(i,j) += JxW[qp]*dt*dt*(
                                     mu_s*(
-                                          invR* dphi[i][qp](1) * dphi[j][qp](0) //(E)
-                                          - invR2* dphi[i][qp](1) * phi[j][qp] //(H)
-                                          + 2*invR2* phi[i][qp] * dphi[j][qp](1) //(L)
+                                          dphi[i][qp](1) * dphi[j][qp](0)
                                     )
                                     + lambda*(
-                                      + invR* dphi[i][qp](0)*dphi[j][qp](1) //(5)
-                                      + invR2* phi[i][qp]*dphi[j][qp](1) //(6)
+                                      + dphi[i][qp](0)*dphi[j][qp](1)
+                                      + invR* phi[i][qp]*dphi[j][qp](1)
                                     )
                                     );
                     }
@@ -850,19 +846,14 @@ void assemble_fsi (EquationSystems& es,
                                 (v_old+dt*f_v)*phi[i][qp]
                                 - dt*(
                                     mu_s*(
-                                        invR* dphi[i][qp](0)*grad_d_old(1) //(C)
-                                        - invR2* phi[i][qp]*grad_d_old(1) //(D)
-                                        +2*invR2* dphi[i][qp](1)*d_old //(M)
-                                        + dphi[i][qp](0)*grad_e_old(0) //(F)
-                                        - invR* phi[i][qp]*grad_e_old(0) //(G)
-                                        - invR* dphi[i][qp](0)*e_old //(I)
-                                        + invR2* phi[i][qp]*e_old //(J)
-                                        +2*invR2* dphi[i][qp](1)*grad_e_old(1) //(K)
+                                        dphi[i][qp](0)*grad_d_old(1)
+                                        + dphi[i][qp](0)*grad_e_old(0)
+                                        + 2.*dphi[i][qp](1)*grad_e_old(1)
                                     )
                                     + lambda*(
-                                            dphi[i][qp](1)*grad_d_old(0) //(7)
-                                            + invR*dphi[i][qp](1)*d_old //(8)
-                                            + invR2*dphi[i][qp](1)*grad_e_old(1) //(9)
+                                            dphi[i][qp](1)*grad_d_old(0)
+                                            + invR* dphi[i][qp](1)*d_old
+                                            + dphi[i][qp](1)*grad_e_old(1)
                                             )
                                     )
                                   );
@@ -870,28 +861,24 @@ void assemble_fsi (EquationSystems& es,
                     {
                         Kvu(i,j) += JxW[qp]*dt*dt*(
                                     mu_s*(
-                                      invR* dphi[i][qp](0)*dphi[j][qp](1) //(C)
-                                      - invR2* phi[i][qp]*dphi[j][qp](1) //(D)
-                                      +2*invR2* dphi[i][qp](1)*phi[j][qp] //(M)
+                                      dphi[i][qp](0)*dphi[j][qp](1)
                                     )
                                     + lambda*(
-                                      dphi[i][qp](1)*dphi[i][qp](0) //(7)
-                                      + invR*dphi[i][qp](1)*phi[i][qp] //(8)
+                                      dphi[i][qp](1)*dphi[j][qp](0)
+                                      + invR* dphi[i][qp](1)*phi[j][qp]
                                     )
                                     );
                         Kvv(i,j) += JxW[qp]*(
                                     phi[i][qp]*phi[j][qp]
                                     + dt*dt*(
                                       mu_s*(
-                                        + dphi[i][qp](0)*dphi[j][qp](0) //(F)
-                                        - invR* phi[i][qp]*dphi[j][qp](0) //(G)
-                                        - invR* dphi[i][qp](0)*phi[j][qp] //(I)
-                                        + invR2* phi[i][qp]*phi[j][qp] //(J)
-                                        +2*invR2* dphi[i][qp](1)*dphi[j][qp](1) //(K)
+                                        dphi[i][qp](0)*dphi[j][qp](0)
+                                        + 2.*dphi[i][qp](1)*dphi[j][qp](1)
                                         )
                                       )
-                                    + lambda*invR2*dphi[i][qp](1)*dphi[j][qp](1) //(9)
-
+                                    + lambda*(
+                                        dphi[i][qp](1)*dphi[j][qp](1)
+                                      )
                                   );
                     }
 //                    for (uint j=0; j<n_p_dofs; j++)
