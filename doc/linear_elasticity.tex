@@ -23,6 +23,9 @@
 \vect{d} & displacement \\
 \vect{u} & velocity \\
 \vect{\nabla} & del operator \\
+\rho & density \\
+\mu & first viscosity constant \\
+\lambda & second viscosity constant \\
 \hline
 \end{tabular}
 \vspace*{2em}
@@ -60,30 +63,31 @@ inner products
 
 \section{Linear Elasticity}
 \[
-\ten{\sigma} = 2 \mu \ten{\epsilon} + \lambda \trace(\ten{\epsilon}) \ten{I}
+\ten{\sigma} = 2 \mu \ten{\epsilon}(\vect{d}) +
+\lambda \trace(\ten{\epsilon}(\vect{d})) \ten{I}
 \]
 
 strong form
 \[
-\ddot{\vect{d}} - \vect{\nabla} \cdot \ten{\sigma}(\vect{d}) = \vect{f}
+\rho \ddot{\vect{d}} - \vect{\nabla} \cdot \ten{\sigma}(\vect{d}) = \vect{f}
 \]
 
 weak form
 \[
-(\ddot{\vect{d}},\vect{b}) + (\ten{\sigma}(\vect{d}),\ten{\epsilon}(\vect{b})) =
+(\rho \ddot{\vect{d}},\vect{b}) + (\ten{\sigma}(\vect{d}),\ten{\epsilon}(\vect{b})) =
 (\vect{f},\vect{b}) \qquad \forall \vect{b} \in \vect{V}
 \]
 
 strong form
 \begin{align*}
 \dot{\vect{d}} - \vect{u} = 0 \\
-\dot{\vect{u}} - \vect{\nabla} \cdot \ten{\sigma}(\vect{d}) = \vect{f}
+\rho \dot{\vect{u}} - \vect{\nabla} \cdot \ten{\sigma}(\vect{d}) = \vect{f}
 \end{align*}
 
 weak form
 \begin{align*}
 &(\dot{\vect{d}},\vect{b}) - (\vect{u},\vect{b}) = 0 & &\forall \vect{b} \in \vect{V} \\
-&(\dot{\vect{u}},\vect{v}) + (\ten{\sigma}(\vect{d}),\ten{\epsilon}(\vect{v})) =
+&(\rho \dot{\vect{u}},\vect{v}) + (\ten{\sigma}(\vect{d}),\ten{\epsilon}(\vect{v})) =
 (\vect{f},\vect{v}) & &\forall \vect{v} \in \vect{V}
 \end{align*}
 
@@ -91,7 +95,8 @@ time discretization
 \begin{align*}
 &\left(\frac{\vect{d}}{\Delta t},\vect{b}\right) - (\vect{u},\vect{b}) =
 \left(\frac{\vect{d}_0}{\Delta t},\vect{b} \right) & &\forall \vect{b} \in \vect{V} \\
-&\left(\frac{\vect{u}}{\Delta t},\vect{v}\right) + (\ten{\sigma}(\vect{d}),\ten{\epsilon}(\vect{v})) =
+&\left(\frac{\rho \vect{u}}{\Delta t},\vect{v}\right)
++ (\ten{\sigma}(\vect{d}),\ten{\epsilon}(\vect{v})) =
 \left(\frac{\vect{u}_0}{\Delta t} + \vect{f},\vect{v}\right) & &\forall \vect{v} \in \vect{V}
 \end{align*}
 
@@ -105,7 +110,7 @@ time discretization
 \begin{align*}
 &(\vect{d},\vect{b}) - \Delta t (\vect{u},\vect{b}) =
 (\vect{d}_0,\vect{b}) & &\forall \vect{b} \in \vect{V} \\
-&(\vect{u},\vect{v}) + \Delta t^2 (\ten{\sigma}(\vect{u}),\ten{\epsilon}(\vect{v})) =
+&( \rho \vect{u},\vect{v}) + \Delta t^2 (\ten{\sigma}(\vect{u}),\ten{\epsilon}(\vect{v})) =
 (\vect{u}_0 + \Delta t\vect{f},\vect{v}) - \Delta t (\ten{\sigma}(\vect{d_0}),\ten{\epsilon}(\vect{v}))
 & &\forall \vect{v} \in \vect{V}
 \end{align*}
