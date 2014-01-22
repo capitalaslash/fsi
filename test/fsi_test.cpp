@@ -85,10 +85,24 @@ struct F_s: public F
 
 void generate_biquad( Mesh & mesh, GetPot & param )
 {
+    uint const flag_f = param("flag_f", 11);
+    uint const flag_s = param("flag_s", 12);
+    uint const n_elem = param("n_elem", 8);
+
+    bool const axisym = param("axisym", false);
+    uint dir_m = 0;
+    if (axisym) dir_m = 1;
+    uint dir_o = 1-dir_m;
+
+    uint const nx = (dir_o+1)*n_elem;
+    uint const ny = (dir_m+1)*n_elem;
+    Real const lx = (dir_o+1)*1.;
+    Real const ly = (dir_m+1)*1.;
+
     MeshTools::Generation::build_square (mesh,
-                                         16, 8,
-                                         0., 2.,
-                                         0., 1.,
+                                         nx, ny,
+                                         0., lx,
+                                         0., ly,
                                          QUAD9);
 
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
@@ -96,15 +110,12 @@ void generate_biquad( Mesh & mesh, GetPot & param )
 
     mesh.boundary_info->clear();
 
-    uint flag_f = param("flag_f", 11);
-    uint flag_s = param("flag_s", 12);
-
     for ( ; el != end_el; ++el)
     {
         Elem* elem = *el;
 
         subdomain_id_type region_flag = flag_f;
-        if (elem->point(8)(0) > 1.)
+        if (elem->point(8)(dir_m) > 1.)
         {
             region_flag = flag_s;
         }
@@ -116,8 +127,8 @@ void generate_biquad( Mesh & mesh, GetPot & param )
             if (elem->neighbor(s) == NULL)
             {
                 AutoPtr<Elem> side (elem->build_side(s));
-                Real side_x = side->point(2)(0);
-                Real side_y = side->point(2)(1);
+                Real side_x = side->point(2)(dir_m);
+                Real side_y = side->point(2)(dir_o);
 
                 subdomain_id_type side_flag = 0;
                 if ( side_x > 0. && side_x < 1. &&
