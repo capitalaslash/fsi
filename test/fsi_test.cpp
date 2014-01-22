@@ -42,6 +42,8 @@
 #include "assembly/interface.hpp"
 #include "util/init.hpp"
 
+//#define AXISYM
+
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
 
@@ -829,8 +831,10 @@ void assemble_fsi (EquationSystems& es,
         // Now we will build the element matrix.
         for (uint qp=0; qp<qrule.n_points(); qp++)
         {
+#ifdef AXISYM
             Real const invR = 1./q_point[qp](0);
             Real const invR2 = invR * invR;
+#endif
 
             // compute old solution
             Number d_old = 0.;
@@ -869,15 +873,19 @@ void assemble_fsi (EquationSystems& es,
                                         2.*dphi[i][qp](0)*grad_d_old(0)
                                         + dphi[i][qp](1)*grad_d_old(1)
                                         + dphi[i][qp](1)*grad_e_old(0)
+#ifdef AXISYM
                                         + 2.*invR2 * phi[i][qp]*d_old
+#endif
                                         )
                                     + lambda*(
                                             dphi[i][qp](0)*grad_d_old(0)
+                                            + dphi[i][qp](0)*grad_e_old(1)
+#ifdef AXISYM
                                             + invR* phi[i][qp]*grad_d_old(0)
                                             + invR* dphi[i][qp](0)*d_old
                                             + invR2* phi[i][qp]*d_old
-                                            + dphi[i][qp](0)*grad_e_old(1)
                                             + invR* phi[i][qp]*grad_e_old(1)
+#endif
                                             )
                                      )
                                   );
@@ -889,13 +897,17 @@ void assemble_fsi (EquationSystems& es,
                                       mu_s*(
                                             2.*dphi[i][qp](0)*dphi[j][qp](0)
                                             + dphi[i][qp](1)*dphi[j][qp](1)
+#ifdef AXISYM
                                             + 2.*invR2* phi[i][qp]*phi[j][qp]
+#endif
                                     )
                                     + lambda*(
                                         dphi[i][qp](0)*dphi[j][qp](0)
+#ifdef AXISYM
                                         + invR* phi[i][qp]*dphi[j][qp](0)
                                         + invR* dphi[i][qp](0)*phi[j][qp]
                                         + invR2* phi[i][qp]*phi[j][qp]
+#endif
                                           )
                                     )
                                   );
@@ -905,7 +917,9 @@ void assemble_fsi (EquationSystems& es,
                                     )
                                     + lambda*(
                                       + dphi[i][qp](0)*dphi[j][qp](1)
+#ifdef AXISYM
                                       + invR* phi[i][qp]*dphi[j][qp](1)
+#endif
                                     )
                                     );
                     }
@@ -924,8 +938,10 @@ void assemble_fsi (EquationSystems& es,
                                     )
                                     + lambda*(
                                             dphi[i][qp](1)*grad_d_old(0)
-                                            + invR* dphi[i][qp](1)*d_old
                                             + dphi[i][qp](1)*grad_e_old(1)
+#ifdef AXISYM
+                                            + invR* dphi[i][qp](1)*d_old
+#endif
                                             )
                                     )
                                   );
@@ -937,7 +953,9 @@ void assemble_fsi (EquationSystems& es,
                                     )
                                     + lambda*(
                                       dphi[i][qp](1)*dphi[j][qp](0)
+#ifdef AXISYM
                                       + invR* dphi[i][qp](1)*phi[j][qp]
+#endif
                                     )
                                     );
                         Kvv(i,j) += JxW[qp]*(
