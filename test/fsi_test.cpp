@@ -231,9 +231,9 @@ int main (int argc, char** argv)
     std::vector<uint> vars_ux (1, u_var);
     std::vector<uint> vars_uy (1, v_var);
 
-    std::vector<uint> vars_vel (2);
-    vars_vel[0] = u_var;
-    vars_vel[1] = v_var;
+    //std::vector<uint> vars_vel (2);
+    //vars_vel[0] = u_var;
+    //vars_vel[1] = v_var;
 
     ZeroFunction<Real> zero;
 
