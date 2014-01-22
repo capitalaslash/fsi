@@ -82,6 +82,72 @@ struct F_s: public F
     }
 };
 
+void generate_biquad( Mesh & mesh, GetPot & param )
+{
+    MeshTools::Generation::build_square (mesh,
+                                         16, 8,
+                                         0., 2.,
+                                         0., 1.,
+                                         QUAD9);
+
+    MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
+    const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
+
+    mesh.boundary_info->clear();
+
+    uint flag_f = param("flag_f", 11);
+    uint flag_s = param("flag_s", 12);
+
+    for ( ; el != end_el; ++el)
+    {
+        Elem* elem = *el;
+
+        subdomain_id_type region_flag = flag_f;
+        if (elem->point(8)(0) > 1.)
+        {
+            region_flag = flag_s;
+        }
+        elem->subdomain_id() = region_flag;
+
+        for (uint s=0; s<elem->n_sides(); s++)
+        {
+            // check if side in on boundary
+            if (elem->neighbor(s) == NULL)
+            {
+                AutoPtr<Elem> side (elem->build_side(s));
+                Real side_x = side->point(2)(0);
+                Real side_y = side->point(2)(1);
+
+                subdomain_id_type side_flag = 0;
+                if ( side_x > 0. && side_x < 1. &&
+                         std::fabs( side_y - 0. ) < 1.e-8 )
+                    side_flag = 1;
+                else if ( side_x > 1. && side_x < 2. &&
+                         std::fabs( side_y - 0. ) < 1.e-8 )
+                    side_flag = 2;
+                else if ( std::fabs( side_x - 2.) < 1.e-8 &&
+                        side_y > 0. && side_y < 1. )
+                    side_flag = 3;
+                else if ( side_x > 1. && side_x < 2. &&
+                         std::fabs( side_y - 1. ) < 1.e-8 )
+                    side_flag = 4;
+                else if ( side_x > 0. && side_x < 1. &&
+                         std::fabs( side_y - 1. ) < 1.e-8 )
+                    side_flag = 5;
+                else if ( std::fabs( side_x - 0.) < 1.e-8 &&
+                        side_y > 0. && side_y < 1. )
+                    side_flag = 6;
+                else
+                    abort();
+
+                mesh.boundary_info->add_side(elem,s,side_flag);
+            }
+        }
+    }
+
+    mesh.boundary_info->print_info();
+}
+
 // The main program.
 int main (int argc, char** argv)
 {
@@ -93,7 +159,16 @@ int main (int argc, char** argv)
 
     Mesh mesh(init.comm(), 2);
 
-    mesh.read(mesh_file);
+    std::string mesh_file = param_file("mesh_file_bi", "mesh/quad-22.msh");
+
+    if( mesh_file == "structured" )
+    {
+        generate_biquad( mesh, param_file );
+    }
+    else
+    {
+        mesh.read(mesh_file);
+    }
 
     mesh.print_info();
 
