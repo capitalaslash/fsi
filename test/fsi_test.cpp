@@ -619,7 +619,7 @@ void assemble_disp (EquationSystems& es,
                         {
                             for (uint j=0; j<n_d_dofs; j++)
                             {
-                                Ke(i,j) += JxW[qp]*grad_b[i][qp]*grad_b[j][qp];
+                                Ke(i,j) += JxW[qp]*dt*grad_b[i][qp]*grad_b[j][qp];
                             }
                         }
                     }
