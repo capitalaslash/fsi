@@ -639,11 +639,15 @@ void assemble_disp (EquationSystems& es,
         system.rhs->add_vector    (Fe, dof_indices);
     } // end of element loop
 
-    //    system.matrix->close();
-    //    system.matrix->print_matlab("mat.m");
+//    std::stringstream ss;
+//    ss << "mat_" << system_name << ".m";
+//    system.matrix->close();
+//    system.matrix->print_matlab(ss.str().c_str());
 
-    //    system.rhs->close();
-    //    system.rhs->print();
+//    ss.str("");
+//    ss << "rhs_" << system_name << ".m";
+//    system.rhs->close();
+//    system.rhs->print_matlab(ss.str().c_str());
 
     // That's it.
     return;
@@ -1126,11 +1130,10 @@ void assemble_fsi (EquationSystems& es,
     } // end of element loop
 
 //    system.matrix->close();
-//    system.matrix->print_matlab("mat.m");
+//    system.matrix->print_matlab("mat_fsi.m");
 
 //    system.rhs->close();
-//    std::ofstream fout("rhs.txt");
-//    system.rhs->print(fout);
+//    system.rhs->print_matlab("rhs_fsi.m");
 
     // That's it.
     return;
