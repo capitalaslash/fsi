@@ -236,45 +236,31 @@ int main (int argc, char** argv)
     //vars_vel[1] = v_var;
 
     // system where to apply the condition RIGHT
-    AutoPtr<System> system_dr (&system_dx);
-    std::vector<uint> vars_dr (1, dx_var);
-    std::vector<uint> vars_ur (1, u_var);
+    System & system_dr = system_dy;
+    std::vector<uint> vars_dr (1, dy_var);
+    std::vector<uint> vars_ur (1, v_var);
     // system where to apply the other conditions
-    AutoPtr<System> system_do (&system_dy);
-    std::vector<uint> vars_do (1, dy_var);
-    std::vector<uint> vars_uo (1, v_var);
-
-    bool const axisym = param_file ("axisym", false);
-    if (axisym)
-    {
-        system_dr.reset(&system_dy);
-        vars_dr[0] = dy_var;
-        vars_ur[0] = v_var;
-        system_do.reset(&system_dx);
-        vars_do[0] = dx_var;
-        vars_uo[0] = u_var;
-    }
+    System & system_do = system_dx;
+    std::vector<uint> vars_do (1, dx_var);
+    std::vector<uint> vars_uo (1, u_var);
 
     ZeroFunction<Real> zero;
 
     // RIGHT
-    system_dr->get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_right, vars_dr, &zero ) );
+    system_dr. get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_right, vars_dr, &zero ) );
     system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_right, vars_ur, &zero ) );
 
     // BOTTOM_FLUID
-    system_do->get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_bottom_f, vars_do, &zero ) );
+    system_do. get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_bottom_f, vars_do, &zero ) );
     system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_bottom_f, vars_uo, &zero ) );
 
     // TOP_FLUID
-    system_do->get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_f, vars_do, &zero ) );
+    system_do. get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_f, vars_do, &zero ) );
     system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_f, vars_uo, &zero ) );
 
     // LEFT
     //system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_left, vars_dx, &zero ) );
     //system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_left, vars_dy, &zero ) );
-
-    system_dr->reset(nullptr);
-    system_do->reset(nullptr);
 
     system_dx.attach_assemble_function (assemble_disp);
     system_dx.attach_init_function (init_zero);
