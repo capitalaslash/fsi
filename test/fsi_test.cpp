@@ -1082,9 +1082,9 @@ void assemble_fsi (EquationSystems& es,
             // check if side in on boundary
             if (elem->neighbor(s) == NULL)
             {
-                if( mesh.boundary_info->has_boundary_id(elem, s, 6) ||
+                if( mesh.boundary_info->has_boundary_id(elem, s, 6) /*||
                         mesh.boundary_info->has_boundary_id(elem, s, 2) ||
-                        mesh.boundary_info->has_boundary_id(elem, s, 4) )
+                        mesh.boundary_info->has_boundary_id(elem, s, 4)*/ )
                 {
                 // AutoPtr<Elem> side (elem->build_side(s));
 
