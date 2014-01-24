@@ -987,10 +987,10 @@ void assemble_fsi (EquationSystems& es,
                                         dphi[i][qp](0)*dphi[j][qp](0)
                                         + 2.*dphi[i][qp](1)*dphi[j][qp](1)
                                         )
-                                      )
                                     + lambda*(
                                         dphi[i][qp](1)*dphi[j][qp](1)
                                       )
+                                    )
                                   );
                     }
 //                    for (uint j=0; j<n_p_dofs; j++)
@@ -1006,6 +1006,7 @@ void assemble_fsi (EquationSystems& es,
                         if ((*system_i.solution)(dof_indices_i[i]) < 0.5) // not on interface
                         {
                             Kpp(i,i) = 1.;
+                            Fp(i) = 1.;
                         }
                     }
 //                    for (uint j=0; j<n_u_dofs; j++)
@@ -1034,7 +1035,7 @@ void assemble_fsi (EquationSystems& es,
                                                   + dphi[j][qp](0)*dphi[i][qp](0)
                                                   )
                                                   );
-                                              Kuv(i,j) += JxW[qp]*dt*mu_f*dphi[i][qp](1)*dphi[j][qp](0);
+                        Kuv(i,j) += JxW[qp]*dt*mu_f*dphi[i][qp](1)*dphi[j][qp](0);
                     }
                     for (uint j=0; j<n_p_dofs; j++ )
                     {
