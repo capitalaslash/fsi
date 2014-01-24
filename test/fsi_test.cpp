@@ -87,22 +87,20 @@ void generate_biquad( Mesh & mesh, GetPot & param )
 {
     uint const flag_f = param("flag_f", 11);
     uint const flag_s = param("flag_s", 12);
-    uint const n_elem = param("n_elem", 8);
+    uint const nx = param("nx", 16);
+    uint const ny = param("ny", 8);
+    Real const ox = param("ox", 0.0);
+    Real const lx = param("lx", 2.0);
+    Real const oy = param("oy", 0.0);
+    Real const ly = param("ly", 1.0);
+    Real const li = param("li", 1.0);
 
     bool const axisym = param("axisym", false);
-    uint dir_m = 0;
-    if (axisym) dir_m = 1;
-    uint dir_o = 1-dir_m;
-
-    uint const nx = (dir_o+1)*n_elem;
-    uint const ny = (dir_m+1)*n_elem;
-    Real const lx = (dir_o+1)*1.;
-    Real const ly = (dir_m+1)*1.;
 
     MeshTools::Generation::build_square (mesh,
                                          nx, ny,
-                                         0., lx,
-                                         0., ly,
+                                         ox, lx,
+                                         oy, ly,
                                          QUAD9);
 
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
@@ -114,45 +112,92 @@ void generate_biquad( Mesh & mesh, GetPot & param )
     {
         Elem* elem = *el;
 
-        subdomain_id_type region_flag = flag_f;
-        if (elem->point(8)(dir_m) > 1.)
+        if (axisym)
         {
-            region_flag = flag_s;
-        }
-        elem->subdomain_id() = region_flag;
-
-        for (uint s=0; s<elem->n_sides(); s++)
-        {
-            // check if side in on boundary
-            if (elem->neighbor(s) == NULL)
+            subdomain_id_type region_flag = flag_f;
+            if (elem->point(8)(1) > li)
             {
-                AutoPtr<Elem> side (elem->build_side(s));
-                Real side_x = side->point(2)(dir_m);
-                Real side_y = side->point(2)(dir_o);
+                region_flag = flag_s;
+            }
+            elem->subdomain_id() = region_flag;
 
-                subdomain_id_type side_flag = 0;
-                if ( side_x > 0. && side_x < 1. &&
-                         std::fabs( side_y - 0. ) < 1.e-8 )
-                    side_flag = 1;
-                else if ( side_x > 1. && side_x < 2. &&
-                         std::fabs( side_y - 0. ) < 1.e-8 )
-                    side_flag = 2;
-                else if ( std::fabs( side_x - 2.) < 1.e-8 &&
-                        side_y > 0. && side_y < 1. )
-                    side_flag = 3;
-                else if ( side_x > 1. && side_x < 2. &&
-                         std::fabs( side_y - 1. ) < 1.e-8 )
-                    side_flag = 4;
-                else if ( side_x > 0. && side_x < 1. &&
-                         std::fabs( side_y - 1. ) < 1.e-8 )
-                    side_flag = 5;
-                else if ( std::fabs( side_x - 0.) < 1.e-8 &&
-                        side_y > 0. && side_y < 1. )
-                    side_flag = 6;
-                else
-                    abort();
+            for (uint s=0; s<elem->n_sides(); s++)
+            {
+                // check if side in on boundary
+                if (elem->neighbor(s) == NULL)
+                {
+                    AutoPtr<Elem> side (elem->build_side(s));
+                    Real side_x = side->point(2)(0);
+                    Real side_y = side->point(2)(1);
 
-                mesh.boundary_info->add_side(elem,s,side_flag);
+                    subdomain_id_type side_flag = 0;
+                    if ( side_y > oy && side_y < li &&
+                         std::fabs( side_x - lx ) < 1.e-8 )
+                        side_flag = 1;
+                    else if ( side_y > li && side_y < ly &&
+                              std::fabs( side_x - lx ) < 1.e-8 )
+                        side_flag = 2;
+                    else if ( std::fabs( side_y - ly) < 1.e-8 &&
+                              side_x > ox && side_x < lx )
+                        side_flag = 3;
+                    else if ( side_y > li && side_y < ly &&
+                              std::fabs( side_x - ox ) < 1.e-8 )
+                        side_flag = 4;
+                    else if ( side_y > 0. && side_y < li &&
+                              std::fabs( side_x - ox ) < 1.e-8 )
+                        side_flag = 5;
+                    else if ( std::fabs( side_y - oy) < 1.e-8 &&
+                              side_x > ox && side_x < lx )
+                        side_flag = 6;
+                    else
+                        abort();
+
+                    mesh.boundary_info->add_side(elem,s,side_flag);
+                }
+            }
+        }
+        else
+        {
+            subdomain_id_type region_flag = flag_f;
+            if (elem->point(8)(0) > li)
+            {
+                region_flag = flag_s;
+            }
+            elem->subdomain_id() = region_flag;
+
+            for (uint s=0; s<elem->n_sides(); s++)
+            {
+                // check if side in on boundary
+                if (elem->neighbor(s) == NULL)
+                {
+                    AutoPtr<Elem> side (elem->build_side(s));
+                    Real side_x = side->point(2)(0);
+                    Real side_y = side->point(2)(1);
+
+                    subdomain_id_type side_flag = 0;
+                    if ( side_x > ox && side_x < li &&
+                         std::fabs( side_y - oy ) < 1.e-8 )
+                        side_flag = 1;
+                    else if ( side_x > li && side_x < lx &&
+                              std::fabs( side_y - oy ) < 1.e-8 )
+                        side_flag = 2;
+                    else if ( std::fabs( side_x - lx) < 1.e-8 &&
+                              side_y > oy && side_y < ly )
+                        side_flag = 3;
+                    else if ( side_x > li && side_x < lx &&
+                              std::fabs( side_y - ly ) < 1.e-8 )
+                        side_flag = 4;
+                    else if ( side_x > ox && side_x < li &&
+                              std::fabs( side_y - ly ) < 1.e-8 )
+                        side_flag = 5;
+                    else if ( std::fabs( side_x - ox) < 1.e-8 &&
+                              side_y > oy && side_y < ly )
+                        side_flag = 6;
+                    else
+                        abort();
+
+                    mesh.boundary_info->add_side(elem,s,side_flag);
+                }
             }
         }
     }
