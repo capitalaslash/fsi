@@ -225,11 +225,11 @@ int main (int argc, char** argv)
     std::set<boundary_id_type> bc_top_s;
     bc_top_s.insert(4);
 
-    std::vector<uint> vars_dx (1, dx_var);
-    std::vector<uint> vars_dy (1, dy_var);
+//    std::vector<uint> vars_dx (1, dx_var);
+//    std::vector<uint> vars_dy (1, dy_var);
 
-    std::vector<uint> vars_ux (1, u_var);
-    std::vector<uint> vars_uy (1, v_var);
+//    std::vector<uint> vars_ux (1, u_var);
+//    std::vector<uint> vars_uy (1, v_var);
 
     //std::vector<uint> vars_vel (2);
     //vars_vel[0] = u_var;
