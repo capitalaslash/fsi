@@ -903,46 +903,45 @@ void assemble_fsi (EquationSystems& es,
         Fv.reposition (v_var*n_u_dofs, n_u_dofs);
         Fp.reposition (p_var*n_u_dofs, n_p_dofs);
 
-        // Now we will build the element matrix.
-        for (uint qp=0; qp<qrule.n_points(); qp++)
+        // solid domain
+        if (elem->subdomain_id() == flag_s)
         {
+            for (uint qp=0; qp<qrule.n_points(); qp++)
+            {
 #ifdef AXISYM
-            Real const invR = 1./q_point[qp](0);
-            Real const invR2 = invR * invR;
+                Real const invR = 1./q_point[qp](0);
+                Real const invR2 = invR * invR;
 #endif
 
-            // compute old solution
-            Number d_old = 0.;
-            Number e_old = 0.;
-            Gradient grad_d_old;
-            Gradient grad_e_old;
-            for (uint l=0; l<n_d_dofs; l++)
-            {
-                d_old += b[l][qp]*system_d.old_solution (dof_indices_d[l]);
-                e_old += b[l][qp]*system_e.old_solution (dof_indices_e[l]);
-                grad_d_old.add_scaled (grad_b[l][qp],system_d.old_solution (dof_indices_d[l]));
-                grad_e_old.add_scaled (grad_b[l][qp],system_e.old_solution (dof_indices_e[l]));
-            }
+                // compute old solution
+                Number d_old = 0.;
+                Number e_old = 0.;
+                Gradient grad_d_old;
+                Gradient grad_e_old;
+                for (uint l=0; l<n_d_dofs; l++)
+                {
+                    d_old += b[l][qp]*system_d.old_solution (dof_indices_d[l]);
+                    e_old += b[l][qp]*system_e.old_solution (dof_indices_e[l]);
+                    grad_d_old.add_scaled (grad_b[l][qp],system_d.old_solution (dof_indices_d[l]));
+                    grad_e_old.add_scaled (grad_b[l][qp],system_e.old_solution (dof_indices_e[l]));
+                }
 
-            Number u_old = 0.;
-            Number v_old = 0.;
-            Gradient grad_u_old;
-            Gradient grad_v_old;
-            for (uint l=0; l<n_u_dofs; l++)
-            {
-                u_old += phi[l][qp]*system.old_solution (dof_indices_u[l]);
-                v_old += phi[l][qp]*system.old_solution (dof_indices_v[l]);
-                grad_u_old.add_scaled (dphi[l][qp],system.old_solution (dof_indices_u[l]));
-                grad_v_old.add_scaled (dphi[l][qp],system.old_solution (dof_indices_v[l]));
-            }
+                Number u_old = 0.;
+                Number v_old = 0.;
+                Gradient grad_u_old;
+                Gradient grad_v_old;
+                for (uint l=0; l<n_u_dofs; l++)
+                {
+                    u_old += phi[l][qp]*system.old_solution (dof_indices_u[l]);
+                    v_old += phi[l][qp]*system.old_solution (dof_indices_v[l]);
+                    grad_u_old.add_scaled (dphi[l][qp],system.old_solution (dof_indices_u[l]));
+                    grad_v_old.add_scaled (dphi[l][qp],system.old_solution (dof_indices_v[l]));
+                }
 
-            // solid domain
-            if (elem->subdomain_id() == flag_s)
-            {
                 for (uint i=0; i<n_u_dofs; i++)
                 {
                     Fu(i) += JxW[qp]*(
-                                (u_old+dt*f_u)*phi[i][qp]
+                                (u_old+f_u*dt)*phi[i][qp]
                                 - dt*(
                                     mu_s*(
                                         2.*dphi[i][qp](0)*grad_d_old(0)
@@ -953,98 +952,98 @@ void assemble_fsi (EquationSystems& es,
 #endif
                                         )
                                     + lambda*(
-                                            dphi[i][qp](0)*grad_d_old(0)
-                                            + dphi[i][qp](0)*grad_e_old(1)
+                                        dphi[i][qp](0)*grad_d_old(0)
+                                        + dphi[i][qp](0)*grad_e_old(1)
 #ifdef AXISYM
-                                            + invR* phi[i][qp]*grad_d_old(0)
-                                            + invR* dphi[i][qp](0)*d_old
-                                            + invR2* phi[i][qp]*d_old
-                                            + invR* phi[i][qp]*grad_e_old(1)
+                                        + invR* phi[i][qp]*grad_d_old(0)
+                                        + invR* dphi[i][qp](0)*d_old
+                                        + invR2* phi[i][qp]*d_old
+                                        + invR* phi[i][qp]*grad_e_old(1)
 #endif
-                                            )
-                                     )
-                                  );
+                                        )
+                                    )
+                                );
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kuu(i,j) += JxW[qp]*(
-                                    phi[i][qp]*phi[j][qp] // mass matrix u*v/dt
-                                    + dt*dt*(
-                                      mu_s*(
-                                            2.*dphi[i][qp](0)*dphi[j][qp](0)
-                                            + dphi[i][qp](1)*dphi[j][qp](1)
+                                        phi[i][qp]*phi[j][qp] // mass matrix u*v/dt
+                                        + dt*dt*(
+                                            mu_s*(
+                                                2.*dphi[i][qp](0)*dphi[j][qp](0)
+                                                + dphi[i][qp](1)*dphi[j][qp](1)
 #ifdef AXISYM
-                                            + 2.*invR2* phi[i][qp]*phi[j][qp]
+                                                + 2.*invR2* phi[i][qp]*phi[j][qp]
 #endif
-                                    )
-                                    + lambda*(
-                                        dphi[i][qp](0)*dphi[j][qp](0)
+                                                )
+                                        + lambda*(
+                                            dphi[i][qp](0)*dphi[j][qp](0)
 #ifdef AXISYM
-                                        + invR* phi[i][qp]*dphi[j][qp](0)
-                                        + invR* dphi[i][qp](0)*phi[j][qp]
-                                        + invR2* phi[i][qp]*phi[j][qp]
+                                            + invR* phi[i][qp]*dphi[j][qp](0)
+                                            + invR* dphi[i][qp](0)*phi[j][qp]
+                                            + invR2* phi[i][qp]*phi[j][qp]
 #endif
-                                          )
-                                    )
-                                  );
-                        Kuv(i,j) += JxW[qp]*dt*dt*(
-                                    mu_s*(
-                                          dphi[i][qp](1) * dphi[j][qp](0)
-                                    )
-                                    + lambda*(
-                                      + dphi[i][qp](0)*dphi[j][qp](1)
-#ifdef AXISYM
-                                      + invR* phi[i][qp]*dphi[j][qp](1)
-#endif
-                                    )
+                                            )
+                                        )
                                     );
+                        Kuv(i,j) += JxW[qp]*dt*dt*(
+                                        mu_s*(
+                                            dphi[i][qp](1)*dphi[j][qp](0)
+                                            )
+                                        + lambda*(
+                                            dphi[i][qp](0)*dphi[j][qp](1)
+#ifdef AXISYM
+                                            + invR* phi[i][qp]*dphi[j][qp](1)
+#endif
+                                            )
+                                        );
                     }
-//                    for (uint j=0; j<n_p_dofs; j++ )
-//                    {
-//                        Kup(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](0);
-//                    }
+                    // for (uint j=0; j<n_p_dofs; j++ )
+                    // {
+                    //     Kup(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](0);
+                    // }
 
                     Fv(i) += JxW[qp]*(
-                                (v_old+dt*f_v)*phi[i][qp]
+                                (v_old+f_v*dt)*phi[i][qp]
                                 - dt*(
                                     mu_s*(
                                         dphi[i][qp](0)*grad_d_old(1)
                                         + dphi[i][qp](0)*grad_e_old(0)
                                         + 2.*dphi[i][qp](1)*grad_e_old(1)
-                                    )
+                                        )
                                     + lambda*(
-                                            dphi[i][qp](1)*grad_d_old(0)
-                                            + dphi[i][qp](1)*grad_e_old(1)
+                                        dphi[i][qp](1)*grad_d_old(0)
+                                        + dphi[i][qp](1)*grad_e_old(1)
 #ifdef AXISYM
-                                            + invR* dphi[i][qp](1)*d_old
+                                        + invR* dphi[i][qp](1)*d_old
 #endif
-                                            )
+                                        )
                                     )
-                                  );
+                                );
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kvu(i,j) += JxW[qp]*dt*dt*(
                                     mu_s*(
-                                      dphi[i][qp](0)*dphi[j][qp](1)
-                                    )
+                                        dphi[i][qp](0)*dphi[j][qp](1)
+                                        )
                                     + lambda*(
-                                      dphi[i][qp](1)*dphi[j][qp](0)
+                                        dphi[i][qp](1)*dphi[j][qp](0)
 #ifdef AXISYM
-                                      + invR* dphi[i][qp](1)*phi[j][qp]
+                                        + invR* dphi[i][qp](1)*phi[j][qp]
 #endif
-                                    )
+                                        )
                                     );
                         Kvv(i,j) += JxW[qp]*(
                                     phi[i][qp]*phi[j][qp]
-                                    + dt*dt*(
-                                      mu_s*(
-                                        dphi[i][qp](0)*dphi[j][qp](0)
-                                        + 2.*dphi[i][qp](1)*dphi[j][qp](1)
-                                        )
-                                    + lambda*(
-                                        dphi[i][qp](1)*dphi[j][qp](1)
-                                      )
-                                    )
-                                  );
+                                        + dt*dt*(
+                                            mu_s*(
+                                                dphi[i][qp](0)*dphi[j][qp](0)
+                                                + 2.*dphi[i][qp](1)*dphi[j][qp](1)
+                                                )
+                                            + lambda*(
+                                                dphi[i][qp](1)*dphi[j][qp](1)
+                                                )
+                                            )
+                                        );
                     }
                     // for (uint j=0; j<n_p_dofs; j++)
                     // {
@@ -1075,9 +1074,70 @@ void assemble_fsi (EquationSystems& es,
                 }
             }
 
-            // fluid domain
-            else if (elem->subdomain_id() == flag_f)
+            // loop on element sides
+            // for (uint s=0; s<elem->n_sides(); s++)
+            // {
+            //     // check if side in on boundary
+            //     if (elem->neighbor(s) == NULL)
+            //     {
+            //         if (mesh.boundary_info->has_boundary_id(elem, s, 4) ||
+            //             mesh.boundary_info->has_boundary_id(elem, s, 2))
+            //         {
+            //             // AutoPtr<Elem> side (elem->build_side(s));
+
+            //             const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
+            //             const std::vector<Real>& JxW_face = fe_face->get_JxW();
+            //             const std::vector<Point >& qface_point = fe_face->get_xyz();
+            //             const std::vector<Point>& normals = fe_face->get_normals();
+
+            //             fe_face->reinit(elem, s);
+
+            //             for (uint qp=0; qp<qface.n_points(); qp++)
+            //             {
+            //                 // const Real xf = qface_point[qp](0);
+            //                 // const Real yf = qface_point[qp](1);
+
+            //                 // const Real penalty = 1.e10;
+
+            //                 const Real value = external_pressure( qface_point[qp], es.parameters );
+
+            //                 // for (unsigned int i=0; i<phi_face.size(); i++)
+            //                 // for (unsigned int j=0; j<phi_face.size(); j++)
+            //                 // Kuu(i,j) += JxW_face[qp]*penalty*phi_face[i][qp]*phi_face[j][qp];
+
+            //                 for (uint i=0; i<phi_face.size(); i++)
+            //                 {
+            //                     Fu(i) -= JxW_face[qp]*dt*value*normals[qp](0)*phi_face[i][qp];
+            //                     Fv(i) -= JxW_face[qp]*dt*value*normals[qp](1)*phi_face[i][qp];
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
+        }
+        // fluid domain
+        else if (elem->subdomain_id() == flag_f)
+        {
+            for (uint qp=0; qp<qrule.n_points(); qp++)
             {
+#ifdef AXISYM
+                Real const invR = 1./q_point[qp](0);
+                Real const invR2 = invR * invR;
+#endif
+
+                // compute old solution
+                Number u_old = 0.;
+                Number v_old = 0.;
+                Gradient grad_u_old;
+                Gradient grad_v_old;
+                for (uint l=0; l<n_u_dofs; l++)
+                {
+                    u_old += phi[l][qp]*system.old_solution (dof_indices_u[l]);
+                    v_old += phi[l][qp]*system.old_solution (dof_indices_v[l]);
+                    grad_u_old.add_scaled (dphi[l][qp],system.old_solution (dof_indices_u[l]));
+                    grad_v_old.add_scaled (dphi[l][qp],system.old_solution (dof_indices_v[l]));
+                }
+
                 for (uint i=0; i<n_u_dofs; i++)
                 {
                     Fu(i) += JxW[qp]*(u_old+f_u*dt)*phi[i][qp];
@@ -1114,7 +1174,7 @@ void assemble_fsi (EquationSystems& es,
                 }
                 for (uint i=0; i<n_p_dofs; i++)
                 {
-//                    Kpp(i,i) = 1.;
+                    // Kpp(i,i) = 1.;
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kpu(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](0);
@@ -1122,54 +1182,51 @@ void assemble_fsi (EquationSystems& es,
                     }
                 }
             }
-//            else
-//            {
-//                std::cerr << "elem subdomain not recognized!" << std::endl;
-//                abort();
-//            }
 
-        } // end of the quadrature point qp-loop
-
-        // loop on element sides
-        for (uint s=0; s<elem->n_sides(); s++)
-        {
-            // check if side in on boundary
-            if (elem->neighbor(s) == NULL)
+            // loop on element sides
+            for (uint s=0; s<elem->n_sides(); s++)
             {
-                if( mesh.boundary_info->has_boundary_id(elem, s, 6) /*||
-                        mesh.boundary_info->has_boundary_id(elem, s, 2) ||
-                        mesh.boundary_info->has_boundary_id(elem, s, 4)*/ )
+                // check if side in on boundary
+                if (elem->neighbor(s) == NULL)
                 {
-                // AutoPtr<Elem> side (elem->build_side(s));
-
-                    const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
-                    const std::vector<Real>& JxW_face = fe_face->get_JxW();
-                    const std::vector<Point >& qface_point = fe_face->get_xyz();
-                    const std::vector<Point>& normals = fe_face->get_normals();
-
-                    fe_face->reinit(elem, s);
-
-                    for (uint qp=0; qp<qface.n_points(); qp++)
+                    if (mesh.boundary_info->has_boundary_id(elem, s, 6))
                     {
-                        // const Real xf = qface_point[qp](0);
-                        // const Real yf = qface_point[qp](1);
+                        // AutoPtr<Elem> side (elem->build_side(s));
 
-                        // const Real penalty = 1.e10;
+                        const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
+                        const std::vector<Real>& JxW_face = fe_face->get_JxW();
+                        const std::vector<Point >& qface_point = fe_face->get_xyz();
+                        const std::vector<Point>& normals = fe_face->get_normals();
 
-                        const Real value = external_pressure( qface_point[qp], es.parameters );
+                        fe_face->reinit(elem, s);
 
-                        // for (unsigned int i=0; i<phi_face.size(); i++)
-                        //   for (unsigned int j=0; j<phi_face.size(); j++)
-                        //     Kuu(i,j) += JxW_face[qp]*penalty*phi_face[i][qp]*phi_face[j][qp];
-
-                        for (uint i=0; i<phi_face.size(); i++)
+                        for (uint qp=0; qp<qface.n_points(); qp++)
                         {
-                            Fu(i) -= JxW_face[qp]*dt*value*normals[qp](0)*phi_face[i][qp];
-                            Fv(i) -= JxW_face[qp]*dt*value*normals[qp](1)*phi_face[i][qp];
+                            // const Real xf = qface_point[qp](0);
+                            // const Real yf = qface_point[qp](1);
+
+                            // const Real penalty = 1.e10;
+
+                            const Real value = external_pressure( qface_point[qp], es.parameters );
+
+                            // for (unsigned int i=0; i<phi_face.size(); i++)
+                            // for (unsigned int j=0; j<phi_face.size(); j++)
+                            // Kuu(i,j) += JxW_face[qp]*penalty*phi_face[i][qp]*phi_face[j][qp];
+
+                            for (uint i=0; i<phi_face.size(); i++)
+                            {
+                                Fu(i) -= JxW_face[qp]*dt*value*normals[qp](0)*phi_face[i][qp];
+                                Fv(i) -= JxW_face[qp]*dt*value*normals[qp](1)*phi_face[i][qp];
+                            }
                         }
                     }
                 }
             }
+        }
+        else
+        {
+            std::cerr << "elem subdomain not recognized!" << std::endl;
+            abort();
         }
 
         // If this assembly program were to be used on an adaptive mesh,
