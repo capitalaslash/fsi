@@ -1,6 +1,7 @@
 set(HDRS
   extvtkio.hpp
   init.hpp
+  biquad.hpp
 )
 install(FILES ${HDRS}
   DESTINATION ${CMAKE_INSTALL_PREFIX}/include/util
@@ -9,6 +10,7 @@ install(FILES ${HDRS}
 set(SRCS
   extvtkio.cpp
   init.cpp
+  biquad.cpp
 )
 
 add_library(fsiutil ${SRCS})
