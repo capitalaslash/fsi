@@ -281,13 +281,13 @@ int main (int argc, char** argv)
     //vars_vel[1] = v_var;
 
     // system where to apply the condition RIGHT
-    System & system_dr = system_dy;
-    std::vector<uint> vars_dr (1, dy_var);
-    std::vector<uint> vars_ur (1, v_var);
+    System & system_dr = system_dx;
+    std::vector<uint> vars_dr (1, dx_var);
+    std::vector<uint> vars_ur (1, u_var);
     // system where to apply the other conditions
-    System & system_do = system_dx;
-    std::vector<uint> vars_do (1, dx_var);
-    std::vector<uint> vars_uo (1, u_var);
+    System & system_do = system_dy;
+    std::vector<uint> vars_do (1, dy_var);
+    std::vector<uint> vars_uo (1, v_var);
 
     ZeroFunction<Real> zero;
 
