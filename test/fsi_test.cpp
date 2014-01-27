@@ -624,24 +624,25 @@ void assemble_disp (EquationSystems& es,
         Ke.resize (n_dofs, n_dofs);
         Fe.resize (n_dofs);
 
-        // Now we will build the element matrix.
-        for (uint qp=0; qp<qrule.n_points(); qp++)
+        // solid domain
+        if (elem->subdomain_id() == flag_s)
         {
-            // compute old solution
-            Number d_old = 0.;
-            for (uint l=0; l<n_d_dofs; l++)
-            {
-                d_old += b[l][qp]*system.old_solution (dof_indices_d[l]);
-            }
-            Number u_old = 0.;
-            for (uint l=0; l<n_u_dofs; l++)
-            {
-                u_old += v[l][qp]*system_vel.current_solution (dof_indices_u[l]);
-            }
 
-            // solid domain
-            if (elem->subdomain_id() == flag_s)
+            // Now we will build the element matrix.
+            for (uint qp=0; qp<qrule.n_points(); qp++)
             {
+                // compute old solution
+                Number d_old = 0.;
+                for (uint l=0; l<n_d_dofs; l++)
+                {
+                    d_old += b[l][qp]*system.old_solution (dof_indices_d[l]);
+                }
+                Number u_old = 0.;
+                for (uint l=0; l<n_u_dofs; l++)
+                {
+                    u_old += v[l][qp]*system_vel.current_solution (dof_indices_u[l]);
+                }
+
                 for (uint i=0; i<n_d_dofs; i++)
                 {
                     Fe(i) += JxW[qp]*( d_old*b[i][qp] + dt*u_old*b[i][qp]);
@@ -650,10 +651,14 @@ void assemble_disp (EquationSystems& es,
                         Ke(i,j) += JxW[qp]*b[i][qp]*b[j][qp];
                     }
                 }
-            }
+            } // end of the quadrature point qp-loop
+        }
 
-            // fluid domain
-            else if (elem->subdomain_id() == flag_f)
+        // fluid domain
+        else if (elem->subdomain_id() == flag_f)
+        {
+            // Now we will build the element matrix.
+            for (uint qp=0; qp<qrule.n_points(); qp++)
             {
                 for (uint i=0; i<n_d_dofs; i++)
                 {
@@ -669,8 +674,8 @@ void assemble_disp (EquationSystems& es,
                         }
                     }
                 }
-            }
-        } // end of the quadrature point qp-loop
+            } // end of the quadrature point qp-loop
+        }
 
         // If this assembly program were to be used on an adaptive mesh,
         // we would have to apply any hanging node constraint equations.
