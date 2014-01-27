@@ -270,15 +270,15 @@ int main (int argc, char** argv)
     std::set<boundary_id_type> bc_top_s;
     bc_top_s.insert(4);
 
-//    std::vector<uint> vars_dx (1, dx_var);
-//    std::vector<uint> vars_dy (1, dy_var);
+    // std::vector<uint> vars_dx (1, dx_var);
+    // std::vector<uint> vars_dy (1, dy_var);
 
-//    std::vector<uint> vars_ux (1, u_var);
-//    std::vector<uint> vars_uy (1, v_var);
+    // std::vector<uint> vars_ux (1, u_var);
+    // std::vector<uint> vars_uy (1, v_var);
 
-    //std::vector<uint> vars_vel (2);
-    //vars_vel[0] = u_var;
-    //vars_vel[1] = v_var;
+    // std::vector<uint> vars_vel (2);
+    // vars_vel[0] = u_var;
+    // vars_vel[1] = v_var;
 
     // system where to apply the condition RIGHT
     System & system_dr = system_dx;
@@ -303,9 +303,13 @@ int main (int argc, char** argv)
     system_do. get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_f, vars_do, &zero ) );
     system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_f, vars_uo, &zero ) );
 
+    // TOP_SOLID
+    // system_do. get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_s, vars_do, &zero ) );
+    // system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_top_s, vars_uo, &zero ) );
+
     // LEFT
-    //system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_left, vars_dx, &zero ) );
-    //system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_left, vars_dy, &zero ) );
+    // system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_left, vars_dx, &zero ) );
+    // system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_left, vars_dy, &zero ) );
 
     system_dx.attach_assemble_function (assemble_disp);
     system_dx.attach_init_function (init_zero);
@@ -341,7 +345,7 @@ int main (int argc, char** argv)
     es.parameters.set<std::string>("output_dir") = param_file("output_dir", "output/");
     es.parameters.set<std::string>("basename") = param_file("basename", "fsitest");
 
-    //    PetscOptionsSetValue("-ksp_monitor_true_residual",PETSC_NULL);
+    // PetscOptionsSetValue("-ksp_monitor_true_residual",PETSC_NULL);
 
     // Initialize the data structures for the equation system.
     es.init ();
@@ -418,7 +422,7 @@ int main (int argc, char** argv)
         es.get_system("dx").solve();
         es.get_system("dy").solve();
 
-        //move_mesh( es );
+        // move_mesh( es );
 
         // Output evey 1 timesteps to file.
         if ((timestep)%1 == 0)
@@ -437,15 +441,14 @@ void move_mesh( EquationSystems& es )
 {
     MeshBase& mesh = es.get_mesh();
 
-    //    MeshBase::node_iterator nd = mesh.local_nodes_begin();
-    //    const MeshBase::node_iterator end_nd = mesh.local_nodes_end();
-
-    //    for ( ; nd != end_nd; ++nd)
-    //    {
-    //        Node* node = *nd;
-    //        Real & x = node->operator()(0);
-    //        x += .1*x;
-    //    }
+    // MeshBase::node_iterator nd = mesh.local_nodes_begin();
+    // const MeshBase::node_iterator end_nd = mesh.local_nodes_end();
+    // for ( ; nd != end_nd; ++nd)
+    // {
+    //     Node* node = *nd;
+    //     Real & x = node->operator()(0);
+    //     x += .1*x;
+    // }
 
     TransientLinearImplicitSystem & system_d =
             es.get_system<TransientLinearImplicitSystem> ("dx");
@@ -689,15 +692,15 @@ void assemble_disp (EquationSystems& es,
         system.rhs->add_vector    (Fe, dof_indices);
     } // end of element loop
 
-//    std::stringstream ss;
-//    ss << "mat_" << system_name << ".m";
-//    system.matrix->close();
-//    system.matrix->print_matlab(ss.str().c_str());
+    // std::stringstream ss;
+    // ss << "mat_" << system_name << ".m";
+    // system.matrix->close();
+    // system.matrix->print_matlab(ss.str().c_str());
 
-//    ss.str("");
-//    ss << "rhs_" << system_name << ".m";
-//    system.rhs->close();
-//    system.rhs->print_matlab(ss.str().c_str());
+    // ss.str("");
+    // ss << "rhs_" << system_name << ".m";
+    // system.rhs->close();
+    // system.rhs->print_matlab(ss.str().c_str());
 
     // That's it.
     return;
@@ -821,7 +824,7 @@ void assemble_fsi (EquationSystems& es,
     Real f_v = es.parameters.get<Real>("f_uy");
     Real mu_s = es.parameters.get<Real>("mu_s");
     Real lambda = es.parameters.get<Real>("lambda");
-    //Real ilambda = 1. / es.parameters.get<Real>("lambda");
+    // Real ilambda = 1. / es.parameters.get<Real>("lambda");
     Real mu_f = es.parameters.get<Real>("mu_f");
 
     uint const flag_s = es.parameters.get<uint>("flag_s");
@@ -872,11 +875,11 @@ void assemble_fsi (EquationSystems& es,
 
         // Reposition the submatrices...  The idea is this:
         //
-        //         -           -          -  -
-        //        | Kuu Kuv Kup |        | Fu |
-        //   Ke = | Kvu Kvv Kvp |;  Fe = | Fv |
-        //        | Kpu Kpv Kpp |        | Fp |
-        //         -           -          -  -
+        //       -           -          -  -
+        //      | Kuu Kuv Kup |        | Fu |
+        // Ke = | Kvu Kvv Kvp |;  Fe = | Fv |
+        //      | Kpu Kpv Kpp |        | Fp |
+        //       -           -          -  -
         //
         // The \p DenseSubMatrix.repostition () member takes the
         // (row_offset, column_offset, row_size, column_size).
@@ -1043,11 +1046,12 @@ void assemble_fsi (EquationSystems& es,
                                     )
                                   );
                     }
-//                    for (uint j=0; j<n_p_dofs; j++)
-//                    {
-//                        Kvp(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](1);
-//                    }
+                    // for (uint j=0; j<n_p_dofs; j++)
+                    // {
+                    //     Kvp(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](1);
+                    // }
                 }
+
                 for (uint i=0; i<n_p_dofs; i++)
                 {
                     if((system_i.solution->first_local_index() <= dof_indices_i[i]) &&
@@ -1059,15 +1063,15 @@ void assemble_fsi (EquationSystems& es,
                             Fp(i) = 1.;
                         }
                     }
-//                    for (uint j=0; j<n_u_dofs; j++)
-//                    {
-//                        Kpu(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](0);
-//                        Kpv(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](1);
-//                    }
-//                    for(uint j=0; j<n_p_dofs; j++)
-//                    {
-//                        Kpp(i,j) += -JxW[qp]*ilambda*psi[i][qp]*psi[j][qp];
-//                    }
+                    // for (uint j=0; j<n_u_dofs; j++)
+                    // {
+                    //     Kpu(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](0);
+                    //     Kpv(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](1);
+                    // }
+                    // for(uint j=0; j<n_p_dofs; j++)
+                    // {
+                    //     Kpp(i,j) += -JxW[qp]*ilambda*psi[i][qp]*psi[j][qp];
+                    // }
                 }
             }
 
@@ -1180,11 +1184,11 @@ void assemble_fsi (EquationSystems& es,
         system.rhs->add_vector    (Fe, dof_indices);
     } // end of element loop
 
-//    system.matrix->close();
-//    system.matrix->print_matlab("mat_fsi.m");
+    // system.matrix->close();
+    // system.matrix->print_matlab("mat_fsi.m");
 
-//    system.rhs->close();
-//    system.rhs->print_matlab("rhs_fsi.m");
+    // system.rhs->close();
+    // system.rhs->print_matlab("rhs_fsi.m");
 
     // That's it.
     return;
