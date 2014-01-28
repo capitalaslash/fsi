@@ -534,7 +534,10 @@ void assemble_disp (EquationSystems& es,
 
                 for (uint i=0; i<n_d_dofs; i++)
                 {
-                    Fe(i) += JxW[qp]*( d_old*b[i][qp] + dt*u_old*b[i][qp]);
+                    // Fe(i) = system.old_solution(dof_indices_d[i])
+                    //         + dt*system_vel.current_solution(dof_indices_u[i]);
+                    // Ke(i,i) = 1.;
+                    Fe(i) += JxW[qp]*(d_old + dt*u_old)*b[i][qp];
                     for (uint j=0; j<n_d_dofs; j++)
                     {
                         Ke(i,j) += JxW[qp]*b[i][qp]*b[j][qp];
