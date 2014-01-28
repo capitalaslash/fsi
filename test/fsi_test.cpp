@@ -954,45 +954,44 @@ void assemble_fsi (EquationSystems& es,
             }
 
             // loop on element sides
-            // for (uint s=0; s<elem->n_sides(); s++)
-            // {
-            //     // check if side in on boundary
-            //     if (elem->neighbor(s) == NULL)
-            //     {
-            //         if (mesh.boundary_info->has_boundary_id(elem, s, 4) ||
-            //             mesh.boundary_info->has_boundary_id(elem, s, 2))
-            //         {
-            //             // AutoPtr<Elem> side (elem->build_side(s));
+            for (uint s=0; s<elem->n_sides(); s++)
+            {
+                // check if side in on boundary
+                if (elem->neighbor(s) == NULL)
+                {
+                    if (mesh.boundary_info->has_boundary_id(elem, s, 2))
+                    {
+                        // AutoPtr<Elem> side (elem->build_side(s));
 
-            //             const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
-            //             const std::vector<Real>& JxW_face = fe_face->get_JxW();
-            //             const std::vector<Point >& qface_point = fe_face->get_xyz();
-            //             const std::vector<Point>& normals = fe_face->get_normals();
+                        const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
+                        const std::vector<Real>& JxW_face = fe_face->get_JxW();
+                        const std::vector<Point >& qface_point = fe_face->get_xyz();
+                        const std::vector<Point>& normals = fe_face->get_normals();
 
-            //             fe_face->reinit(elem, s);
+                        fe_face->reinit(elem, s);
 
-            //             for (uint qp=0; qp<qface.n_points(); qp++)
-            //             {
-            //                 // const Real xf = qface_point[qp](0);
-            //                 // const Real yf = qface_point[qp](1);
+                        for (uint qp=0; qp<qface.n_points(); qp++)
+                        {
+                            // const Real xf = qface_point[qp](0);
+                            // const Real yf = qface_point[qp](1);
 
-            //                 // const Real penalty = 1.e10;
+                            // const Real penalty = 1.e10;
 
-            //                 const Real value = external_pressure( qface_point[qp], es.parameters );
+                            const Real value = external_pressure( qface_point[qp], es.parameters );
 
-            //                 // for (unsigned int i=0; i<phi_face.size(); i++)
-            //                 // for (unsigned int j=0; j<phi_face.size(); j++)
-            //                 // Kuu(i,j) += JxW_face[qp]*penalty*phi_face[i][qp]*phi_face[j][qp];
+                            // for (unsigned int i=0; i<phi_face.size(); i++)
+                            // for (unsigned int j=0; j<phi_face.size(); j++)
+                            // Kuu(i,j) += JxW_face[qp]*penalty*phi_face[i][qp]*phi_face[j][qp];
 
-            //                 for (uint i=0; i<phi_face.size(); i++)
-            //                 {
-            //                     Fu(i) -= JxW_face[qp]*dt*value*normals[qp](0)*phi_face[i][qp];
-            //                     Fv(i) -= JxW_face[qp]*dt*value*normals[qp](1)*phi_face[i][qp];
-            //                 }
-            //             }
-            //         }
-            //     }
-            // }
+                            for (uint i=0; i<phi_face.size(); i++)
+                            {
+                                Fu(i) -= JxW_face[qp]*dt*value*normals[qp](0)*phi_face[i][qp];
+                                Fv(i) -= JxW_face[qp]*dt*value*normals[qp](1)*phi_face[i][qp];
+                            }
+                        }
+                    }
+                }
+            }
         }
         // fluid domain
         else if (elem->subdomain_id() == flag_f)
