@@ -1032,13 +1032,21 @@ void assemble_fsi (EquationSystems& es,
                                               + dt*mu_f*(
                                                   dphi[j][qp]*dphi[i][qp]
                                                   + dphi[j][qp](0)*dphi[i][qp](0)
+#ifdef AXISYM
+                                                  + 2.*invR2* phi[i][qp]*phi[j][qp]
+#endif
                                                   )
-                                                  );
+                                              );
                         Kuv(i,j) += JxW[qp]*dt*mu_f*dphi[i][qp](1)*dphi[j][qp](0);
                     }
                     for (uint j=0; j<n_p_dofs; j++ )
                     {
-                        Kup(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](0);
+                        Kup(i,j) += -JxW[qp]*dt*psi[j][qp]*(
+                                    dphi[i][qp](0)
+#ifdef AXISYM
+                                    + invR * phi[i][qp]
+#endif
+                                    );
                     }
 
                     Fv(i) += JxW[qp]*(v_old+f_v*dt)*phi[i][qp];
