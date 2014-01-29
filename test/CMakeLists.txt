@@ -18,7 +18,6 @@ FSI_copy_file(mesh_quad-2x10 mesh/quad-2x10.msh)
 FSI_copy_file(mesh_quad-2splx10 mesh/quad-2splx10.msh)
 
 add_subdirectory(basic)
-
-add_subdirectory(fsi)
-
 add_subdirectory(structure)
+add_subdirectory(ns)
+add_subdirectory(fsi)
