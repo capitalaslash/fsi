@@ -80,33 +80,20 @@ int main (int argc, char** argv)
 
     Mesh mesh(init.comm());
 
-    GetPot param_file("param.dat");
+    GetPot param_file("../param.dat");
 
-    std::string mesh_file = param_file ("mesh_file", "structured");
+    uint const nx = param_file("nx", 60);
+    uint const ny = param_file("ny", 4);
+    Real const ox = param_file("ox", 0.0);
+    Real const oy = param_file("oy", 0.0);
+    Real const lx = param_file("lx", 3.0);
+    Real const ly = param_file("ly", 0.2);
 
-    if (mesh_file == "structured")
-    {
-        uint const nx = param_file("nx", 15);
-        uint const ny = param_file("ny", 1);
-        uint const nz = param_file("nz", 1);
-        Real const ox = param_file("ox", 0.0);
-        Real const oy = param_file("oy", 0.0);
-        Real const oz = param_file("oz", 0.0);
-        Real const lx = param_file("lx", 3.0);
-        Real const ly = param_file("ly", 0.2);
-        Real const lz = param_file("lz", 0.2);
-
-        MeshTools::Generation::build_cube (mesh,
-                                           nx, ny, nz,
-                                           ox, lx,
-                                           oy, ly,
-                                           oz, lz,
-                                           HEX20);
-    }
-    else
-    {
-        mesh.read (mesh_file);
-    }
+    MeshTools::Generation::build_square (mesh,
+                                         nx, ny,
+                                         ox, lx,
+                                         oy, ly,
+                                         QUAD9);
 
     //    XdrIO mesh_io(mesh);
     //    mesh_io.read("one_tri.xda");
@@ -128,36 +115,27 @@ int main (int argc, char** argv)
 
     const uint dy_var = system_dy.add_variable ("dy", SECOND);
 
-    TransientLinearImplicitSystem & system_dz =
-            equation_systems.add_system<TransientLinearImplicitSystem> ("dz");
-
-    const uint dz_var = system_dz.add_variable ("dz", SECOND);
-
     TransientLinearImplicitSystem & system_vel =
             equation_systems.add_system<TransientLinearImplicitSystem> ("vel");
 
     const uint u_var = system_vel.add_variable ("ux", SECOND);
     const uint v_var = system_vel.add_variable ("uy", SECOND);
-    const uint w_var = system_vel.add_variable ("uz", SECOND);
     system_vel.add_variable ("p", FIRST);
 
     std::set<boundary_id_type> zero_bc;
-    zero_bc.insert (4); // left side
+    zero_bc.insert(3); // left side
 
     std::vector<uint> vars_dx (1, dx_var);
     std::vector<uint> vars_dy (1, dy_var);
-    std::vector<uint> vars_dz (1, dz_var);
 
-    std::vector<uint> vars_vel (3);
+    std::vector<uint> vars_vel (2);
     vars_vel[0] = u_var;
     vars_vel[1] = v_var;
-    vars_vel[2] = w_var;
 
     ZeroFunction<Real> zero;
 
     system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( zero_bc, vars_dx,  &zero ) );
     system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( zero_bc, vars_dy,  &zero ) );
-    system_dz .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( zero_bc, vars_dz,  &zero ) );
     system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( zero_bc, vars_vel, &zero ) );
 
     // Give the system a pointer to the matrix assembly
@@ -168,21 +146,17 @@ int main (int argc, char** argv)
     system_dy.attach_assemble_function (assemble_disp);
     system_dy.attach_init_function (init_zero);
 
-    system_dz.attach_assemble_function (assemble_disp);
-    system_dz.attach_init_function (init_zero);
-
     system_vel.attach_assemble_function (assemble_vel);
     system_vel.attach_init_function (init_zero);
 
-    std::string const output_file = param_file("output_file", "structure_seg3d.e");
+    std::string const output_file = param_file("output_file", "structure_seg2d.e");
 
     equation_systems.parameters.set<Real>("t_in") = param_file("t_in", 0.);
-    equation_systems.parameters.set<Real>("t_out") = param_file("t_out", 2.0);
-    equation_systems.parameters.set<Real>("dt") = param_file("dt", 1.e-2);
+    equation_systems.parameters.set<Real>("t_out") = param_file("t_out", 0.2);
+    equation_systems.parameters.set<Real>("dt") = param_file("dt", 1.e-3);
 
     equation_systems.parameters.set<Real>("f_ux") = param_file("f_u", 0.);
-    equation_systems.parameters.set<Real>("f_uy") = param_file("f_v", 0.);
-    equation_systems.parameters.set<Real>("f_uz") = param_file("f_w", 1.);
+    equation_systems.parameters.set<Real>("f_uy") = param_file("f_v", 1.);
 
     Real const E = param_file("E", 1e8);
     Real const ni = param_file("ni", 0.3);
@@ -204,7 +178,6 @@ int main (int argc, char** argv)
     system_vel.time = equation_systems.parameters.get<Real>("t_in");
     system_dx. time = equation_systems.parameters.get<Real>("t_in");
     system_dy. time = equation_systems.parameters.get<Real>("t_in");
-    system_dz. time = equation_systems.parameters.get<Real>("t_in");
     uint timestep = 0;
 
 #ifdef LIBMESH_HAVE_EXODUS_API
@@ -224,7 +197,6 @@ int main (int argc, char** argv)
         system_vel .time += dt;
         system_dx.time += dt;
         system_dy.time += dt;
-        system_dz.time += dt;
 
         equation_systems.parameters.set<Real> ("time") = system_vel.time;
         equation_systems.parameters.set<Real> ("dt")   = dt;
@@ -260,13 +232,11 @@ int main (int argc, char** argv)
         *system_vel.old_local_solution = *system_vel.current_local_solution;
         *system_dx .old_local_solution = *system_dx .current_local_solution;
         *system_dy .old_local_solution = *system_dy .current_local_solution;
-        *system_dz .old_local_solution = *system_dz .current_local_solution;
 
         // Assemble & solve the linear system
         equation_systems.get_system("vel").solve();
         equation_systems.get_system("dx").solve();
         equation_systems.get_system("dy").solve();
-        equation_systems.get_system("dz").solve();
 
         // Output evey 1 timesteps to file.
         if ((timestep)%1 == 0)
@@ -286,7 +256,7 @@ void assemble_disp (EquationSystems& es,
 {
     // It is a good idea to make sure we are assembling
     // the proper system.
-    if (! ((system_name == "dx") || (system_name == "dy") || (system_name == "dz")))
+    if (! ((system_name == "dx") || (system_name == "dy")))
     {
         libmesh_error();
     }
@@ -313,8 +283,6 @@ void assemble_disp (EquationSystems& es,
         vel_name = "ux";
     else if (system_name == "dy")
         vel_name = "uy";
-    else if (system_name == "dz")
-        vel_name = "uz";
 
     uint const u_var = system_vel.variable_number(vel_name);
 
@@ -431,7 +399,7 @@ void assemble_disp (EquationSystems& es,
 
             for (uint i=0; i<n_d_dofs; i++)
             {
-                Fe(i) += JxW[qp]*( d_old*b[i][qp] + dt*u_old*v[i][qp]);
+                Fe(i) += JxW[qp]*( d_old*b[i][qp] + dt*u_old*b[i][qp]);
                 for (uint j=0; j<n_d_dofs; j++)
                 {
                     Ke(i,j) += JxW[qp]*b[i][qp]*b[j][qp];
@@ -450,6 +418,12 @@ void assemble_disp (EquationSystems& es,
         system.matrix->add_matrix (Ke, dof_indices);
         system.rhs->add_vector    (Fe, dof_indices);
     } // end of element loop
+
+//    system.matrix->close();
+//    system.matrix->print_matlab("mat.m");
+
+    //    system.rhs->close();
+    //    system.rhs->print();
 
     // That's it.
     return;
@@ -475,18 +449,14 @@ void assemble_vel (EquationSystems& es,
             es.get_system<TransientLinearImplicitSystem> ("dx");
     TransientLinearImplicitSystem & system_e =
             es.get_system<TransientLinearImplicitSystem> ("dy");
-    TransientLinearImplicitSystem & system_f =
-            es.get_system<TransientLinearImplicitSystem> ("dz");
 
     // Numeric ids corresponding to each variable in the system
     const uint u_var = system.variable_number ("ux");
     const uint v_var = system.variable_number ("uy");
-    const uint w_var = system.variable_number ("uz");
     const uint p_var = system.variable_number ("p");
 
     const uint d_var = system_d.variable_number ("dx");
     const uint e_var = system_e.variable_number ("dy");
-    const uint f_var = system_f.variable_number ("dz");
 
     // Get the Finite Element type for "u".  Note this will be
     // the same as the type for "v".
@@ -529,7 +499,6 @@ void assemble_vel (EquationSystems& es,
     const DofMap & dof_map = system.get_dof_map();
     const DofMap & dof_map_d = system_d.get_dof_map();
     const DofMap & dof_map_e = system_e.get_dof_map();
-    const DofMap & dof_map_f = system_f.get_dof_map();
 
     // Define data structures to contain the element matrix
     // and right-hand-side vector contribution.  Following
@@ -539,15 +508,13 @@ void assemble_vel (EquationSystems& es,
     DenseVector<Number> Fe;
 
     DenseSubMatrix<Number>
-            Kuu(Ke), Kuv(Ke), Kuw(Ke), Kup(Ke),
-            Kvu(Ke), Kvv(Ke), Kvw(Ke), Kvp(Ke),
-            Kwu(Ke), Kwv(Ke), Kww(Ke), Kwp(Ke),
-            Kpu(Ke), Kpv(Ke), Kpw(Ke), Kpp(Ke);
+            Kuu(Ke), Kuv(Ke), Kup(Ke),
+            Kvu(Ke), Kvv(Ke), Kvp(Ke),
+            Kpu(Ke), Kpv(Ke), Kpp(Ke);
 
     DenseSubVector<Number>
             Fu(Fe),
             Fv(Fe),
-            Fw(Fe),
             Fp(Fe);
 
     // This vector will hold the degree of freedom indices for
@@ -556,11 +523,9 @@ void assemble_vel (EquationSystems& es,
     std::vector<dof_id_type> dof_indices;
     std::vector<dof_id_type> dof_indices_u;
     std::vector<dof_id_type> dof_indices_v;
-    std::vector<dof_id_type> dof_indices_w;
     std::vector<dof_id_type> dof_indices_p;
     std::vector<dof_id_type> dof_indices_d;
     std::vector<dof_id_type> dof_indices_e;
-    std::vector<dof_id_type> dof_indices_f;
 
     // Now we will loop over all the elements in the mesh that
     // live on the local processor. We will compute the element
@@ -572,7 +537,6 @@ void assemble_vel (EquationSystems& es,
     Real dt = es.parameters.get<Real>("dt");
     Real f_u = es.parameters.get<Real>("f_ux");
     Real f_v = es.parameters.get<Real>("f_uy");
-    Real f_w = es.parameters.get<Real>("f_uz");
     Real mu = es.parameters.get<Real>("mu");
     Real lambda = es.parameters.get<Real>("lambda");
 
@@ -592,11 +556,9 @@ void assemble_vel (EquationSystems& es,
         dof_map.dof_indices (elem, dof_indices);
         dof_map.dof_indices (elem, dof_indices_u, u_var);
         dof_map.dof_indices (elem, dof_indices_v, v_var);
-        dof_map.dof_indices (elem, dof_indices_w, w_var);
         dof_map.dof_indices (elem, dof_indices_p, p_var);
         dof_map_d.dof_indices (elem, dof_indices_d, d_var);
         dof_map_e.dof_indices (elem, dof_indices_e, e_var);
-        dof_map_f.dof_indices (elem, dof_indices_f, f_var);
 
         const uint n_dofs   = dof_indices.size();
         const uint n_u_dofs = dof_indices_u.size();
@@ -636,27 +598,18 @@ void assemble_vel (EquationSystems& es,
 
         Kuu.reposition (u_var*n_u_dofs, u_var*n_u_dofs, n_u_dofs, n_u_dofs);
         Kuv.reposition (u_var*n_u_dofs, v_var*n_u_dofs, n_u_dofs, n_u_dofs);
-        Kuw.reposition (u_var*n_u_dofs, w_var*n_u_dofs, n_u_dofs, n_u_dofs);
         Kup.reposition (u_var*n_u_dofs, p_var*n_u_dofs, n_u_dofs, n_p_dofs);
 
         Kvu.reposition (v_var*n_u_dofs, u_var*n_u_dofs, n_u_dofs, n_u_dofs);
         Kvv.reposition (v_var*n_u_dofs, v_var*n_u_dofs, n_u_dofs, n_u_dofs);
-        Kvw.reposition (v_var*n_u_dofs, w_var*n_u_dofs, n_u_dofs, n_u_dofs);
         Kvp.reposition (v_var*n_u_dofs, p_var*n_u_dofs, n_u_dofs, n_p_dofs);
-
-        Kwu.reposition (w_var*n_u_dofs, u_var*n_u_dofs, n_u_dofs, n_u_dofs);
-        Kwv.reposition (w_var*n_u_dofs, v_var*n_u_dofs, n_u_dofs, n_u_dofs);
-        Kww.reposition (w_var*n_u_dofs, w_var*n_u_dofs, n_u_dofs, n_u_dofs);
-        Kwp.reposition (w_var*n_u_dofs, p_var*n_u_dofs, n_u_dofs, n_p_dofs);
 
         Kpu.reposition ( p_var*n_u_dofs, u_var*n_u_dofs, n_p_dofs, n_u_dofs);
         Kpv.reposition ( p_var*n_u_dofs, v_var*n_u_dofs, n_p_dofs, n_u_dofs);
-        Kpw.reposition ( p_var*n_u_dofs, w_var*n_u_dofs, n_p_dofs, n_u_dofs);
         Kpp.reposition ( p_var*n_u_dofs, p_var*n_u_dofs, n_p_dofs, n_p_dofs);
 
         Fu.reposition (u_var*n_u_dofs, n_u_dofs);
         Fv.reposition (v_var*n_u_dofs, n_u_dofs);
-        Fw.reposition (w_var*n_u_dofs, n_u_dofs);
         Fp.reposition (p_var*n_u_dofs, n_p_dofs);
 
         // Now we will build the element matrix.
@@ -665,22 +618,18 @@ void assemble_vel (EquationSystems& es,
             // compute old solution
             Gradient grad_d_old;
             Gradient grad_e_old;
-            Gradient grad_f_old;
             for (uint l=0; l<n_d_dofs; l++)
             {
                 grad_d_old.add_scaled (grad_b[l][qp],system_d.old_solution (dof_indices_d[l]));
                 grad_e_old.add_scaled (grad_b[l][qp],system_e.old_solution (dof_indices_e[l]));
-                grad_f_old.add_scaled (grad_b[l][qp],system_f.old_solution (dof_indices_f[l]));
             }
 
             Number u_old = 0.;
             Number v_old = 0.;
-            Number w_old = 0.;
             for (uint l=0; l<n_u_dofs; l++)
             {
                 u_old += phi[l][qp]*system.old_solution (dof_indices_u[l]);
                 v_old += phi[l][qp]*system.old_solution (dof_indices_v[l]);
-                w_old += phi[l][qp]*system.old_solution (dof_indices_w[l]);
             }
 
             for (uint i=0; i<n_u_dofs; i++)
@@ -691,11 +640,8 @@ void assemble_vel (EquationSystems& es,
                                            grad_phi[i][qp]*grad_d_old        // grad(d_old) : grad(v)
                                            +grad_phi[i][qp](0)*grad_d_old(0) // grad(d_old)^T : grad(v)
                                            +grad_phi[i][qp](1)*grad_e_old(0) // |
-                                           +grad_phi[i][qp](2)*grad_f_old(0) // |
                                           )
-                                       + lambda*(grad_phi[i][qp](0)*grad_d_old(0)
-                                                 +grad_phi[i][qp](0)*grad_e_old(1)
-                                                 +grad_phi[i][qp](0)*grad_f_old(2))) // stress2 tr(\eps(d_old))*tr(\eps(v))
+                                       + lambda*(grad_phi[i][qp](0)*grad_d_old(0)+grad_phi[i][qp](0)*grad_e_old(1))) // stress2 tr(\eps(d_old))*tr(\eps(v))
                                          );
                 for (uint j=0; j<n_u_dofs; j++)
                 {
@@ -712,10 +658,6 @@ void assemble_vel (EquationSystems& es,
                                                mu*grad_phi[i][qp](1)*grad_phi[j][qp](0) // stress1 \eps(d):\eps(v)
                                                + lambda*grad_phi[i][qp](0)*grad_phi[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
                                 );
-                    Kuw(i,j) += JxW[qp]*dt*dt*(
-                                               mu*grad_phi[i][qp](2)*grad_phi[j][qp](0) // stress1 \eps(d):\eps(v)
-                                               + lambda*grad_phi[i][qp](0)*grad_phi[j][qp](2) // stress2 tr(\eps(d))*tr(\eps(v))
-                                );
                 }
 //                for (uint j=0; j<n_p_dofs; j++ )
 //                {
@@ -728,14 +670,8 @@ void assemble_vel (EquationSystems& es,
                                            grad_phi[i][qp]*grad_e_old
                                            + grad_phi[i][qp](0)*grad_d_old(1)
                                            + grad_phi[i][qp](1)*grad_e_old(1)
-                                           + grad_phi[i][qp](2)*grad_f_old(1)
                                           )
-                                       + lambda*(
-                                               grad_phi[i][qp](1)*grad_d_old(0)
-                                               +grad_phi[i][qp](1)*grad_e_old(1)
-                                               +grad_phi[i][qp](1)*grad_f_old(2)
-                                               )
-                                               )
+                                       + lambda*(grad_phi[i][qp](1)*grad_d_old(0)+grad_phi[i][qp](1)*grad_e_old(1)))
                                     );
                 for (uint j=0; j<n_u_dofs; j++)
                 {
@@ -752,46 +688,6 @@ void assemble_vel (EquationSystems& es,
                                     + lambda*grad_phi[i][qp](1)*grad_phi[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
                                     )
                                   );
-                    Kvw(i,j) += JxW[qp]*dt*dt*(
-                                           mu*grad_phi[i][qp](2)*grad_phi[j][qp](1) // stress1 \eps(d):\eps(v)
-                                           + lambda*grad_phi[i][qp](1)*grad_phi[j][qp](2) // stress2 tr(\eps(d))*tr(\eps(v))
-                                                          );
-                }
-
-                Fw(i) += JxW[qp]*( (w_old+dt*f_w)*phi[i][qp]
-                                   - dt*(
-                                       mu*(
-                                           grad_phi[i][qp]*grad_f_old
-                                           + grad_phi[i][qp](0)*grad_d_old(2)
-                                           + grad_phi[i][qp](1)*grad_e_old(2)
-                                           + grad_phi[i][qp](2)*grad_f_old(2)
-                                           )
-                                        + lambda*(
-                                               grad_phi[i][qp](2)*grad_d_old(0)
-                                               +grad_phi[i][qp](2)*grad_e_old(1)
-                                               +grad_phi[i][qp](2)*grad_f_old(2)
-                                               )
-                                               )
-                                               );
-                for (uint j=0; j<n_u_dofs; j++)
-                {
-                    Kwu(i,j) += JxW[qp]*dt*dt*(
-                                       mu*grad_phi[i][qp](0)*grad_phi[j][qp](2) // stress1 \eps(d):\eps(v)
-                                       + lambda*grad_phi[i][qp](2)*grad_phi[j][qp](0) // stress2 tr(\eps(d))*tr(\eps(v))
-                                       );
-                    Kww(i,j) += JxW[qp]*( phi[i][qp]*phi[j][qp] +
-                                       dt*dt*(
-                                       mu*(
-                                       grad_phi[i][qp]*grad_phi[j][qp]  // stress1 \eps(d):\eps(v)
-                                       + grad_phi[i][qp](2)*grad_phi[j][qp](2)
-                                       )
-                                       + lambda*grad_phi[i][qp](2)*grad_phi[j][qp](2) // stress2 tr(\eps(d))*tr(\eps(v))
-                                       )
-                                       );
-                    Kwv(i,j) += JxW[qp]*dt*dt*(
-                                       mu*grad_phi[i][qp](1)*grad_phi[j][qp](2) // stress1 \eps(d):\eps(v)
-                                       + lambda*grad_phi[i][qp](2)*grad_phi[j][qp](1) // stress2 tr(\eps(d))*tr(\eps(v))
-                                       );
                 }
 //                for (uint j=0; j<n_p_dofs; j++)
 //                {
