@@ -61,27 +61,6 @@ Real external_pressure( Point const & /*point*/, Parameters const & /*param*/ )
     return 1.;
 }
 
-struct F
-{
-    virtual Real operator() (Point const & p) = 0;
-};
-
-struct F_f: public F
-{
-    Real operator() (Point const & p)
-    {
-        return std::exp(p(0));
-    }
-};
-
-struct F_s: public F
-{
-    Real operator() (Point const & /*p*/)
-    {
-        return std::exp(1.);
-    }
-};
-
 // The main program.
 int main (int argc, char** argv)
 {
@@ -124,12 +103,10 @@ int main (int argc, char** argv)
     const uint v_var = system_vel.add_variable ("uy", SECOND);
     system_vel.add_variable ("p", FIRST);
 
-    ExplicitSystem & system_mat =
-            es.add_system<ExplicitSystem>("mat");
+    ExplicitSystem & system_mat = es.add_system<ExplicitSystem>("mat");
     system_mat.add_variable("mat", CONSTANT, MONOMIAL);
 
-    ExplicitSystem & system_int =
-            es.add_system<ExplicitSystem>("interface");
+    ExplicitSystem & system_int = es.add_system<ExplicitSystem>("interface");
     system_int.add_variable("interface", SECOND, LAGRANGE);
 
     std::set<boundary_id_type> bc_1;
@@ -215,6 +192,7 @@ int main (int argc, char** argv)
     es.parameters.set<Real>("f_uy") = param_file("f_v", 0.);
 
     es.parameters.set<bool>("axisym") = param_file("axisym", false);
+
     Real const E = param_file("E", 1e8);
     Real const ni = param_file("ni", 0.3);
 
