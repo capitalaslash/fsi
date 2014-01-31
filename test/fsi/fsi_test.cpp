@@ -165,6 +165,7 @@ int main (int argc, char** argv)
 
     es.parameters.set<std::string>("output_dir") = param_file("output_dir", "output/");
     es.parameters.set<std::string>("basename") = param_file("basename", "fsitest");
+    const uint print_step = param_file("print_step", 1);
 
     // PetscOptionsSetValue("-ksp_monitor_true_residual",PETSC_NULL);
 
@@ -255,7 +256,7 @@ int main (int argc, char** argv)
         // move_mesh( es );
 
         // Output evey 1 timesteps to file.
-        if ((timestep)%1 == 0)
+        if ((timestep)%print_step == 0)
         {
             io_vtk->write_solution(es);
         }
