@@ -188,6 +188,15 @@ int main (int argc, char** argv)
         equation_systems.parameters.set<Real> ("time") = system_vel.time;
         equation_systems.parameters.set<Real> ("dt")   = dt;
 
+        // Recreate any hanging node constraints
+        system_vel.get_dof_map().create_dof_constraints(mesh, system_vel.time);
+
+        // Apply any user-defined constraints
+        system_vel.user_constrain();
+
+        // Expand any recursive constraints
+        system_vel.get_dof_map().process_constraints(mesh);
+
         // A pretty update message
         std::cout << " Solving time step ";
         {
