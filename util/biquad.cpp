@@ -12,7 +12,7 @@ void generate_biquad( Mesh & mesh, GetPot & param )
     Real const ly = param("ly", 1.0);
     Real const li = param("li", 1.0);
 
-    bool const axisym = param("axisym", false);
+    bool const vert = param("mesh_vert", false);
 
     MeshTools::Generation::build_square (mesh,
                                          nx, ny,
@@ -29,7 +29,7 @@ void generate_biquad( Mesh & mesh, GetPot & param )
     {
         Elem* elem = *el;
 
-        if (axisym)
+        if (vert)
         {
             subdomain_id_type region_flag = flag_f;
             if (elem->point(8)(1) > li)
