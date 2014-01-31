@@ -156,7 +156,9 @@ int main (int argc, char** argv)
 
     es.parameters.set<Real>("mu_s") = E / ( 2.*(1.+ni) );
     es.parameters.set<Real>("lambda") = E*ni / ( (1.+ni)*(1.-2.*ni) );
+    es.parameters.set<Real>("rho_s") = param_file("rho_s", 1.0);
     es.parameters.set<Real>("mu_f") = param_file("mu_f", 1e-1);
+    es.parameters.set<Real>("rho_f") = param_file("rho_f", 1.0);
 
     es.parameters.set<Real>("ale_factor") = param_file ("ale_factor", 1e7);
 
@@ -656,9 +658,11 @@ void assemble_fsi (EquationSystems& es,
     Real dt = es.parameters.get<Real>("dt");
     Real f_u = es.parameters.get<Real>("f_ux");
     Real f_v = es.parameters.get<Real>("f_uy");
+    Real rho_s = es.parameters.get<Real>("rho_s");
     Real mu_s = es.parameters.get<Real>("mu_s");
     Real lambda = es.parameters.get<Real>("lambda");
     // Real ilambda = 1. / es.parameters.get<Real>("lambda");
+    Real rho_f = es.parameters.get<Real>("rho_f");
     Real mu_f = es.parameters.get<Real>("mu_f");
     bool axisym = es.parameters.get<bool>("axisym");
 
@@ -762,20 +766,16 @@ void assemble_fsi (EquationSystems& es,
 
                 Number u_old = 0.;
                 Number v_old = 0.;
-                Gradient grad_u_old;
-                Gradient grad_v_old;
                 for (uint l=0; l<n_u_dofs; l++)
                 {
                     u_old += phi[l][qp]*system.old_solution (dof_indices_u[l]);
                     v_old += phi[l][qp]*system.old_solution (dof_indices_v[l]);
-                    grad_u_old.add_scaled (dphi[l][qp],system.old_solution (dof_indices_u[l]));
-                    grad_v_old.add_scaled (dphi[l][qp],system.old_solution (dof_indices_v[l]));
                 }
 
                 for (uint i=0; i<n_u_dofs; i++)
                 {
                     Fu(i) += JxWqp*(
-                                (u_old+f_u*dt)*phi[i][qp]
+                                rho_s*(u_old+f_u*dt)*phi[i][qp]
                                 - dt*(
                                     mu_s*(
                                         2.*dphi[i][qp](0)*grad_d_old(0)
@@ -798,7 +798,7 @@ void assemble_fsi (EquationSystems& es,
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kuu(i,j) += JxWqp*(
-                                        phi[i][qp]*phi[j][qp] // mass matrix u*v/dt
+                                        rho_s*phi[i][qp]*phi[j][qp] // mass matrix u*v/dt
                                         + dt*dt*(
                                             mu_s*(
                                                 2.*dphi[i][qp](0)*dphi[j][qp](0)
@@ -831,7 +831,7 @@ void assemble_fsi (EquationSystems& es,
                     // }
 
                     Fv(i) += JxWqp*(
-                                (v_old+f_v*dt)*phi[i][qp]
+                                rho_s*(v_old+f_v*dt)*phi[i][qp]
                                 - dt*(
                                     mu_s*(
                                         dphi[i][qp](0)*grad_d_old(1)
@@ -857,7 +857,7 @@ void assemble_fsi (EquationSystems& es,
                                         )
                                     );
                         Kvv(i,j) += JxWqp*(
-                                    phi[i][qp]*phi[j][qp]
+                                        rho_s*phi[i][qp]*phi[j][qp]
                                         + dt*dt*(
                                             mu_s*(
                                                 dphi[i][qp](0)*dphi[j][qp](0)
@@ -960,10 +960,10 @@ void assemble_fsi (EquationSystems& es,
 
                 for (uint i=0; i<n_u_dofs; i++)
                 {
-                    Fu(i) += JxWqp*(u_old+f_u*dt)*phi[i][qp];
+                    Fu(i) += JxWqp*rho_f*(u_old+f_u*dt)*phi[i][qp];
                     for (uint j=0; j<n_u_dofs; j++)
                     {
-                        Kuu(i,j) += JxWqp*( phi[j][qp]*phi[i][qp]
+                        Kuu(i,j) += JxWqp*( rho_f*phi[j][qp]*phi[i][qp]
                                               + dt*mu_f*(
                                                   dphi[j][qp]*dphi[i][qp]
                                                   + dphi[j][qp](0)*dphi[i][qp](0)
@@ -980,11 +980,11 @@ void assemble_fsi (EquationSystems& es,
                                     );
                     }
 
-                    Fv(i) += JxWqp*(v_old+f_v*dt)*phi[i][qp];
+                    Fv(i) += JxWqp*rho_f*(v_old+f_v*dt)*phi[i][qp];
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kvu(i,j) += JxWqp*dt*mu_f*dphi[i][qp](0)*dphi[j][qp](1);
-                        Kvv(i,j) += JxWqp*( phi[j][qp]*phi[i][qp]
+                        Kvv(i,j) += JxWqp*( rho_f*phi[j][qp]*phi[i][qp]
                                               +dt*mu_f*(
                                                   dphi[j][qp]*dphi[i][qp]
                                                   + dphi[j][qp](1)*dphi[i][qp](1)
