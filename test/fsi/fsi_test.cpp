@@ -43,8 +43,6 @@
 #include "util/biquad.hpp"
 #include "util/init.hpp"
 
-//#define AXISYM
-
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
 
@@ -216,6 +214,7 @@ int main (int argc, char** argv)
     es.parameters.set<Real>("f_ux") = param_file("f_u", 0.);
     es.parameters.set<Real>("f_uy") = param_file("f_v", 0.);
 
+    es.parameters.set<bool>("axisym") = param_file("axisym", false);
     Real const E = param_file("E", 1e8);
     Real const ni = param_file("ni", 0.3);
 
@@ -715,6 +714,7 @@ void assemble_fsi (EquationSystems& es,
     Real lambda = es.parameters.get<Real>("lambda");
     // Real ilambda = 1. / es.parameters.get<Real>("lambda");
     Real mu_f = es.parameters.get<Real>("mu_f");
+    bool axisym = es.parameters.get<bool>("axisym");
 
     uint const flag_s = es.parameters.get<uint>("flag_s");
     uint const flag_f = es.parameters.get<uint>("flag_f");
@@ -797,10 +797,9 @@ void assemble_fsi (EquationSystems& es,
         {
             for (uint qp=0; qp<qrule.n_points(); qp++)
             {
-#ifdef AXISYM
                 Real const invR = 1./q_point[qp](0);
                 Real const invR2 = invR * invR;
-#endif
+                Real const JxWqp = (axisym)? JxW[qp]*q_point[qp](0):JxW[qp];
 
                 // compute old solution
                 Number d_old = 0.;
@@ -829,60 +828,54 @@ void assemble_fsi (EquationSystems& es,
 
                 for (uint i=0; i<n_u_dofs; i++)
                 {
-                    Fu(i) += JxW[qp]*(
+                    Fu(i) += JxWqp*(
                                 (u_old+f_u*dt)*phi[i][qp]
                                 - dt*(
                                     mu_s*(
                                         2.*dphi[i][qp](0)*grad_d_old(0)
                                         + dphi[i][qp](1)*grad_d_old(1)
                                         + dphi[i][qp](1)*grad_e_old(0)
-#ifdef AXISYM
-                                        + 2.*invR2 * phi[i][qp]*d_old
-#endif
+                                        + axisym*2.*invR2 * phi[i][qp]*d_old
                                         )
                                     + lambda*(
                                         dphi[i][qp](0)*grad_d_old(0)
                                         + dphi[i][qp](0)*grad_e_old(1)
-#ifdef AXISYM
-                                        + invR* phi[i][qp]*grad_d_old(0)
-                                        + invR* dphi[i][qp](0)*d_old
-                                        + invR2* phi[i][qp]*d_old
-                                        + invR* phi[i][qp]*grad_e_old(1)
-#endif
+                                        +axisym*invR*(
+                                            phi[i][qp]*grad_d_old(0)
+                                            + dphi[i][qp](0)*d_old
+                                            + invR* phi[i][qp]*d_old
+                                            + phi[i][qp]*grad_e_old(1)
+                                            )
                                         )
                                     )
                                 );
                     for (uint j=0; j<n_u_dofs; j++)
                     {
-                        Kuu(i,j) += JxW[qp]*(
+                        Kuu(i,j) += JxWqp*(
                                         phi[i][qp]*phi[j][qp] // mass matrix u*v/dt
                                         + dt*dt*(
                                             mu_s*(
                                                 2.*dphi[i][qp](0)*dphi[j][qp](0)
                                                 + dphi[i][qp](1)*dphi[j][qp](1)
-#ifdef AXISYM
-                                                + 2.*invR2* phi[i][qp]*phi[j][qp]
-#endif
+                                                + axisym*2.*invR2* phi[i][qp]*phi[j][qp]
                                                 )
                                         + lambda*(
                                             dphi[i][qp](0)*dphi[j][qp](0)
-#ifdef AXISYM
-                                            + invR* phi[i][qp]*dphi[j][qp](0)
-                                            + invR* dphi[i][qp](0)*phi[j][qp]
-                                            + invR2* phi[i][qp]*phi[j][qp]
-#endif
+                                            + axisym*invR*(
+                                                phi[i][qp]*dphi[j][qp](0)
+                                                + dphi[i][qp](0)*phi[j][qp]
+                                                + invR* phi[i][qp]*phi[j][qp]
+                                                )
                                             )
                                         )
                                     );
-                        Kuv(i,j) += JxW[qp]*dt*dt*(
+                        Kuv(i,j) += JxWqp*dt*dt*(
                                         mu_s*(
                                             dphi[i][qp](1)*dphi[j][qp](0)
                                             )
                                         + lambda*(
                                             dphi[i][qp](0)*dphi[j][qp](1)
-#ifdef AXISYM
-                                            + invR* phi[i][qp]*dphi[j][qp](1)
-#endif
+                                            + axisym*invR* phi[i][qp]*dphi[j][qp](1)
                                             )
                                         );
                     }
@@ -891,7 +884,7 @@ void assemble_fsi (EquationSystems& es,
                     //     Kup(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](0);
                     // }
 
-                    Fv(i) += JxW[qp]*(
+                    Fv(i) += JxWqp*(
                                 (v_old+f_v*dt)*phi[i][qp]
                                 - dt*(
                                     mu_s*(
@@ -902,26 +895,22 @@ void assemble_fsi (EquationSystems& es,
                                     + lambda*(
                                         dphi[i][qp](1)*grad_d_old(0)
                                         + dphi[i][qp](1)*grad_e_old(1)
-#ifdef AXISYM
-                                        + invR* dphi[i][qp](1)*d_old
-#endif
+                                        + axisym*invR* dphi[i][qp](1)*d_old
                                         )
                                     )
                                 );
                     for (uint j=0; j<n_u_dofs; j++)
                     {
-                        Kvu(i,j) += JxW[qp]*dt*dt*(
+                        Kvu(i,j) += JxWqp*dt*dt*(
                                     mu_s*(
                                         dphi[i][qp](0)*dphi[j][qp](1)
                                         )
                                     + lambda*(
                                         dphi[i][qp](1)*dphi[j][qp](0)
-#ifdef AXISYM
-                                        + invR* dphi[i][qp](1)*phi[j][qp]
-#endif
+                                        + axisym*invR* dphi[i][qp](1)*phi[j][qp]
                                         )
                                     );
-                        Kvv(i,j) += JxW[qp]*(
+                        Kvv(i,j) += JxWqp*(
                                     phi[i][qp]*phi[j][qp]
                                         + dt*dt*(
                                             mu_s*(
@@ -974,7 +963,7 @@ void assemble_fsi (EquationSystems& es,
                         // AutoPtr<Elem> side (elem->build_side(s));
 
                         const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
-                        const std::vector<Real>& JxW_face = fe_face->get_JxW();
+                        const std::vector<Real>& JxWface = fe_face->get_JxW();
                         const std::vector<Point >& qface_point = fe_face->get_xyz();
                         const std::vector<Point>& normals = fe_face->get_normals();
 
@@ -982,6 +971,8 @@ void assemble_fsi (EquationSystems& es,
 
                         for (uint qp=0; qp<qface.n_points(); qp++)
                         {
+                            Real const JxWfaceqp = (axisym)? JxWface[qp]*q_point[qp](0):JxWface[qp];
+
                             // const Real xf = qface_point[qp](0);
                             // const Real yf = qface_point[qp](1);
 
@@ -995,8 +986,8 @@ void assemble_fsi (EquationSystems& es,
 
                             for (uint i=0; i<phi_face.size(); i++)
                             {
-                                Fu(i) -= JxW_face[qp]*dt*value*normals[qp](0)*phi_face[i][qp];
-                                Fv(i) -= JxW_face[qp]*dt*value*normals[qp](1)*phi_face[i][qp];
+                                Fu(i) -= JxWfaceqp*dt*value*normals[qp](0)*phi_face[i][qp];
+                                Fv(i) -= JxWfaceqp*dt*value*normals[qp](1)*phi_face[i][qp];
                             }
                         }
                     }
@@ -1008,55 +999,46 @@ void assemble_fsi (EquationSystems& es,
         {
             for (uint qp=0; qp<qrule.n_points(); qp++)
             {
-#ifdef AXISYM
                 Real const invR = 1./q_point[qp](0);
                 Real const invR2 = invR * invR;
-#endif
+                Real const JxWqp = (axisym)? JxW[qp]*q_point[qp](0):JxW[qp];
 
                 // compute old solution
                 Number u_old = 0.;
                 Number v_old = 0.;
-                Gradient grad_u_old;
-                Gradient grad_v_old;
                 for (uint l=0; l<n_u_dofs; l++)
                 {
                     u_old += phi[l][qp]*system.old_solution (dof_indices_u[l]);
                     v_old += phi[l][qp]*system.old_solution (dof_indices_v[l]);
-                    grad_u_old.add_scaled (dphi[l][qp],system.old_solution (dof_indices_u[l]));
-                    grad_v_old.add_scaled (dphi[l][qp],system.old_solution (dof_indices_v[l]));
                 }
 
                 for (uint i=0; i<n_u_dofs; i++)
                 {
-                    Fu(i) += JxW[qp]*(u_old+f_u*dt)*phi[i][qp];
+                    Fu(i) += JxWqp*(u_old+f_u*dt)*phi[i][qp];
                     for (uint j=0; j<n_u_dofs; j++)
                     {
-                        Kuu(i,j) += JxW[qp]*( phi[j][qp]*phi[i][qp]
+                        Kuu(i,j) += JxWqp*( phi[j][qp]*phi[i][qp]
                                               + dt*mu_f*(
                                                   dphi[j][qp]*dphi[i][qp]
                                                   + dphi[j][qp](0)*dphi[i][qp](0)
-#ifdef AXISYM
-                                                  + 2.*invR2* phi[i][qp]*phi[j][qp]
-#endif
+                                                  + axisym*2.*invR2* phi[i][qp]*phi[j][qp]
                                                   )
                                               );
-                        Kuv(i,j) += JxW[qp]*dt*mu_f*dphi[i][qp](1)*dphi[j][qp](0);
+                        Kuv(i,j) += JxWqp*dt*mu_f*dphi[i][qp](1)*dphi[j][qp](0);
                     }
                     for (uint j=0; j<n_p_dofs; j++ )
                     {
-                        Kup(i,j) += -JxW[qp]*dt*psi[j][qp]*(
+                        Kup(i,j) += -JxWqp*dt*psi[j][qp]*(
                                     dphi[i][qp](0)
-#ifdef AXISYM
-                                    + invR * phi[i][qp]
-#endif
+                                    + axisym*invR * phi[i][qp]
                                     );
                     }
 
-                    Fv(i) += JxW[qp]*(v_old+f_v*dt)*phi[i][qp];
+                    Fv(i) += JxWqp*(v_old+f_v*dt)*phi[i][qp];
                     for (uint j=0; j<n_u_dofs; j++)
                     {
-                        Kvu(i,j) += JxW[qp]*dt*mu_f*dphi[i][qp](0)*dphi[j][qp](1);
-                        Kvv(i,j) += JxW[qp]*( phi[j][qp]*phi[i][qp]
+                        Kvu(i,j) += JxWqp*dt*mu_f*dphi[i][qp](0)*dphi[j][qp](1);
+                        Kvv(i,j) += JxWqp*( phi[j][qp]*phi[i][qp]
                                               +dt*mu_f*(
                                                   dphi[j][qp]*dphi[i][qp]
                                                   + dphi[j][qp](1)*dphi[i][qp](1)
@@ -1065,7 +1047,7 @@ void assemble_fsi (EquationSystems& es,
                     }
                     for (uint j=0; j<n_p_dofs; j++)
                     {
-                        Kvp(i,j) += -JxW[qp]*dt*psi[j][qp]*dphi[i][qp](1);
+                        Kvp(i,j) += -JxWqp*dt*psi[j][qp]*dphi[i][qp](1);
                     }
                 }
                 for (uint i=0; i<n_p_dofs; i++)
@@ -1073,8 +1055,8 @@ void assemble_fsi (EquationSystems& es,
                     // Kpp(i,i) = 1.;
                     for (uint j=0; j<n_u_dofs; j++)
                     {
-                        Kpu(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](0);
-                        Kpv(i,j) += -JxW[qp]*dt*psi[i][qp]*dphi[j][qp](1);
+                        Kpu(i,j) += -JxWqp*dt*psi[i][qp]*dphi[j][qp](0);
+                        Kpv(i,j) += -JxWqp*dt*psi[i][qp]*dphi[j][qp](1);
                     }
                 }
             }
@@ -1090,7 +1072,7 @@ void assemble_fsi (EquationSystems& es,
                         // AutoPtr<Elem> side (elem->build_side(s));
 
                         const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
-                        const std::vector<Real>& JxW_face = fe_face->get_JxW();
+                        const std::vector<Real>& JxWface = fe_face->get_JxW();
                         const std::vector<Point >& qface_point = fe_face->get_xyz();
                         const std::vector<Point>& normals = fe_face->get_normals();
 
@@ -1098,6 +1080,7 @@ void assemble_fsi (EquationSystems& es,
 
                         for (uint qp=0; qp<qface.n_points(); qp++)
                         {
+                            Real const JxWfaceqp = (axisym)? JxWface[qp]*q_point[qp](0):JxWface[qp];
                             // const Real xf = qface_point[qp](0);
                             // const Real yf = qface_point[qp](1);
 
@@ -1111,8 +1094,8 @@ void assemble_fsi (EquationSystems& es,
 
                             for (uint i=0; i<phi_face.size(); i++)
                             {
-                                Fu(i) -= JxW_face[qp]*dt*value*normals[qp](0)*phi_face[i][qp];
-                                Fv(i) -= JxW_face[qp]*dt*value*normals[qp](1)*phi_face[i][qp];
+                                Fu(i) -= JxWfaceqp*dt*value*normals[qp](0)*phi_face[i][qp];
+                                Fv(i) -= JxWfaceqp*dt*value*normals[qp](1)*phi_face[i][qp];
                             }
                         }
                     }
