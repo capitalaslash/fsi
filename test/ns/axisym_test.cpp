@@ -59,6 +59,7 @@
 
 #include <petsc.h>
 
+#include "bc/pressureramp.hpp"
 #include "util/init.hpp"
 
 // Bring in everything from the libMesh namespace
@@ -70,6 +71,13 @@ void assemble_vel (EquationSystems& es,
 Real external_pressure( Point const & /*point*/, Parameters const & /*param*/ )
 {
     return 1.;
+}
+
+void inlet_vel (DenseVector<Number>& output, const Point& p, const Real /*t*/)
+{
+    output(0) = 0.0;
+    //output(1) = 0.25*(1.0 - x * x);
+    output(1) = -1.0;
 }
 
 // The main program.
@@ -117,15 +125,20 @@ int main (int argc, char** argv)
 
     const uint u_var = system_vel.add_variable ("u", SECOND);
     const uint v_var = system_vel.add_variable ("v", SECOND);
-    system_vel.add_variable ("p", FIRST);
+    const uint p_var = system_vel.add_variable ("p", FIRST);
 
     const std::set<boundary_id_type> bc_sym = {3}; // left side
     const std::set<boundary_id_type> bc_wall = {1}; // right side
-    const std::set<boundary_id_type> bc_inout = {0, 2}; // bottom, top
+    const std::set<boundary_id_type> bc_in = {0}; // bottom
+    const std::set<boundary_id_type> bc_out = {2}; // top
 
-    system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_wall,  {u_var, v_var}, ZeroFunction<Real>() ) );
-    system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_sym,   {u_var},        ZeroFunction<Real>() ) );
-    system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_inout, {u_var},        ZeroFunction<Real>() ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_wall, {u_var, v_var}, ZeroFunction<Real>() ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_sym, {u_var}, ZeroFunction<Real>() ) );
+//    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_sym, {p_var}, ConstFunction<Real>(1.0) ) );
+//    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_sym, {p_var}, PressureRamp(0.1,0.9,2.0) ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_in, {u_var}, ZeroFunction<Real>() ) );
+//    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_in, {p_var}, ConstFunction<>(1.0) ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_out, {u_var},        ZeroFunction<Real>() ) );
 
     // Give the system a pointer to the matrix assembly
     // function.
@@ -170,7 +183,7 @@ int main (int argc, char** argv)
         timestep++;
         // Incremenet the time counter, set the time and the
         // time step size as parameters in the EquationSystem.
-        system_vel .time += dt;
+        system_vel.time += dt;
 
         equation_systems.parameters.set<Real> ("time") = system_vel.time;
         equation_systems.parameters.set<Real> ("dt")   = dt;
