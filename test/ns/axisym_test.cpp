@@ -78,25 +78,32 @@ int main (int argc, char** argv)
     // Initialize libMesh.
     LibMeshInit init (argc, argv);
 
-    Mesh mesh(init.comm());
-
     GetPot param_file("param.dat");
 
-    uint const nx = param_file("nx", 10);
-    uint const ny = param_file("ny", 20);
-    Real const ox = param_file("ox", 0.0);
-    Real const oy = param_file("oy", 0.0);
-    Real const lx = param_file("lx", 1.0);
-    Real const ly = param_file("ly", 2.0);
+    Mesh mesh(init.comm(), 2);
 
-    MeshTools::Generation::build_square (mesh,
-                                         nx, ny,
-                                         ox, lx,
-                                         oy, ly,
-                                         QUAD9);
+    std::string mesh_file = param_file("mesh_file", "structured");
 
-    //    XdrIO mesh_io(mesh);
-    //    mesh_io.read("one_tri.xda");
+    if( mesh_file == "structured" )
+    {
+        uint const nx = param_file("nx", 10);
+        uint const ny = param_file("ny", 20);
+        Real const ox = param_file("ox", 0.0);
+        Real const oy = param_file("oy", 0.0);
+        Real const lx = param_file("lx", 1.0);
+        Real const ly = param_file("ly", 2.0);
+
+        MeshTools::Generation::build_square (mesh,
+                                             nx, ny,
+                                             ox, lx,
+                                             oy, ly,
+                                             QUAD9);
+    }
+    else
+    {
+        std::cout << "reading mesh from file..." << std::endl;
+        mesh.read(mesh_file);
+    }
 
     // Print information about the mesh to the screen.
     mesh.print_info();
