@@ -66,7 +66,7 @@ int main (int argc, char** argv)
 {
     LibMeshInit init (argc, argv);
 
-    GetPot param_file("../param.dat");
+    GetPot param_file("param.dat");
 
     Mesh mesh(init.comm(), 2);
 
