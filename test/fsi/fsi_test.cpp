@@ -42,6 +42,7 @@
 #include "assembly/interface.hpp"
 #include "util/biquad.hpp"
 #include "util/init.hpp"
+#include "bc/pressureramp.hpp"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
@@ -109,67 +110,24 @@ int main (int argc, char** argv)
     ExplicitSystem & system_int = es.add_system<ExplicitSystem>("interface");
     system_int.add_variable("interface", SECOND, LAGRANGE);
 
-    std::set<boundary_id_type> bc_1;
-    bc_1.insert(1);
-
-    std::set<boundary_id_type> bc_2;
-    bc_2.insert(2);
-
-    std::set<boundary_id_type> bc_3;
-    bc_3.insert(3);
-
-    std::set<boundary_id_type> bc_5;
-    bc_5.insert(5);
-
-    std::set<boundary_id_type> bc_4;
-    bc_4.insert(4);
-
-    std::vector<uint> vars_dx = {dx_var};
-    std::vector<uint> vars_dy = {dy_var};
-
-    std::vector<uint> vars_ux = {u_var};
-    std::vector<uint> vars_uy = {v_var};
-
-    std::vector<uint> vars_vel = {u_var, v_var};
-
-    ZeroFunction<Real> zero;
-
     bool const axisym = param_file("axisym", false);
     if (!axisym)
     {
-        // RIGHT
-        system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_3, vars_dx, &zero ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_3, vars_ux, &zero ) );
+        // ZERO CROSS COMP
+        system_dx .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {dx_var}, ZeroFunction<Real>() ) );
+        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {u_var},  ZeroFunction<Real>() ) );
 
-        // BOTTOM_FLUID
-        system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_1, vars_dy, &zero ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_1, vars_uy, &zero ) );
-
-        // TOP_FLUID
-        system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_5, vars_dy, &zero ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_5, vars_uy, &zero ) );
-
-        // TOP_SOLID
-        system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_4, vars_dy, &zero ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_4, vars_uy, &zero ) );
+        system_dy .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,4,5}, {dy_var}, ZeroFunction<Real>() ) );
+        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,4,5}, {v_var},  ZeroFunction<Real>() ) );
     }
     else
     {
-        // TOP
-        system_dy .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_3, vars_dy, &zero ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_3, vars_uy, &zero ) );
+        // ZERO CROSS COMP
+        system_dy .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {dy_var}, ZeroFunction<Real>() ) );
+        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {v_var},  ZeroFunction<Real>() ) );
 
-        // RIGHT_FLUID
-        system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_1, vars_dx, &zero ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_1, vars_ux, &zero ) );
-
-        // LEFT_FLUID
-        system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_5, vars_dx, &zero ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_5, vars_ux, &zero ) );
-
-        // LEFT_SOLID
-        system_dx .get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_4, vars_dx, &zero ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( libMesh::DirichletBoundary( bc_4, vars_ux, &zero ) );
+        system_dx .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,4,5}, {dx_var}, ZeroFunction<Real>() ) );
+        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,4,5}, {u_var},  ZeroFunction<Real>() ) );
     }
 
     system_dx.attach_assemble_function (assemble_disp);
