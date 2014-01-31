@@ -71,7 +71,7 @@ int main (int argc, char** argv)
 
     Mesh mesh(init.comm(), 2);
 
-    std::string mesh_file = param_file("mesh_file_bi", "structured");
+    std::string mesh_file = param_file("mesh_file", "structured");
 
     if( mesh_file == "structured" )
     {
