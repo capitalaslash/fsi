@@ -503,7 +503,7 @@ void assemble_vel (EquationSystems& es,
 
         // If this assembly program were to be used on an adaptive mesh,
         // we would have to apply any hanging node constraint equations.
-        dof_map.constrain_element_matrix_and_vector (Ke, Fe, dof_indices);
+        dof_map.heterogenously_constrain_element_matrix_and_vector (Ke, Fe, dof_indices);
 
         // The element matrix and right-hand-side are now built
         // for this element.  Add them to the global matrix and
