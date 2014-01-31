@@ -80,6 +80,10 @@ set(LIBS ${LIBS} fsibase)
 add_subdirectory(assembly)
 set(LIBS ${LIBS} fsiassembly)
 
+### fsibc ###
+
+add_subdirectory(bc)
+
 ### fsiutil ###
 
 add_subdirectory(util)
