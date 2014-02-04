@@ -157,6 +157,7 @@ int main (int argc, char** argv)
     es.parameters.set<Real>("mu_s") = E / ( 2.*(1.+ni) );
     es.parameters.set<Real>("lambda") = E*ni / ( (1.+ni)*(1.-2.*ni) );
     es.parameters.set<Real>("rho_s") = param_file("rho_s", 1.0);
+    es.parameters.set<Real>("damp") = param_file("damp", 1e-1);
     es.parameters.set<Real>("mu_f") = param_file("mu_f", 1e-1);
     es.parameters.set<Real>("rho_f") = param_file("rho_f", 1.0);
 
@@ -665,6 +666,7 @@ void assemble_fsi (EquationSystems& es,
     Real rho_f = es.parameters.get<Real>("rho_f");
     Real mu_f = es.parameters.get<Real>("mu_f");
     bool axisym = es.parameters.get<bool>("axisym");
+    Real const damp = es.parameters.get<Real>("damp");
 
     uint const flag_s = es.parameters.get<uint>("flag_s");
     uint const flag_f = es.parameters.get<uint>("flag_f");
@@ -798,7 +800,7 @@ void assemble_fsi (EquationSystems& es,
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kuu(i,j) += JxWqp*(
-                                        rho_s*phi[i][qp]*phi[j][qp] // mass matrix u*v/dt
+                                        rho_s*(1.+damp)*phi[i][qp]*phi[j][qp] // mass matrix u*v/dt
                                         + dt*dt*(
                                             mu_s*(
                                                 2.*dphi[i][qp](0)*dphi[j][qp](0)
@@ -857,7 +859,7 @@ void assemble_fsi (EquationSystems& es,
                                         )
                                     );
                         Kvv(i,j) += JxWqp*(
-                                        rho_s*phi[i][qp]*phi[j][qp]
+                                        rho_s*(1.+damp)*phi[i][qp]*phi[j][qp]
                                         + dt*dt*(
                                             mu_s*(
                                                 dphi[i][qp](0)*dphi[j][qp](0)
