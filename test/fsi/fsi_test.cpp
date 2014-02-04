@@ -657,17 +657,17 @@ void assemble_fsi (EquationSystems& es,
     // will only consider the active elements; hence we use a variant of
     // the \p active_elem_iterator.
 
-    Real dt = es.parameters.get<Real>("dt");
-    Real f_u = es.parameters.get<Real>("f_ux");
-    Real f_v = es.parameters.get<Real>("f_uy");
-    Real rho_s = es.parameters.get<Real>("rho_s");
-    Real mu_s = es.parameters.get<Real>("mu_s");
-    Real lambda = es.parameters.get<Real>("lambda");
-    // Real ilambda = 1. / es.parameters.get<Real>("lambda");
-    Real rho_f = es.parameters.get<Real>("rho_f");
-    Real mu_f = es.parameters.get<Real>("mu_f");
-    bool axisym = es.parameters.get<bool>("axisym");
+    Real const dt = es.parameters.get<Real>("dt");
+    Real const f_u = es.parameters.get<Real>("f_ux");
+    Real const f_v = es.parameters.get<Real>("f_uy");
+    Real const rho_s = es.parameters.get<Real>("rho_s");
+    Real const mu_s = es.parameters.get<Real>("mu_s");
+    Real const lambda = es.parameters.get<Real>("lambda");
+    // Real const ilambda = 1. / es.parameters.get<Real>("lambda");
+    Real const rho_f = es.parameters.get<Real>("rho_f");
+    Real const mu_f = es.parameters.get<Real>("mu_f");
     Real const damp = es.parameters.get<Real>("damp");
+    bool const axisym = es.parameters.get<bool>("axisym");
 
     uint const flag_s = es.parameters.get<uint>("flag_s");
     uint const flag_f = es.parameters.get<uint>("flag_f");
@@ -886,7 +886,7 @@ void assemble_fsi (EquationSystems& es,
                         if ((*system_i.solution)(dof_indices_i[i]) < 0.5) // not on interface
                         {
                             Kpp(i,i) = 1.;
-                            Fp(i) = 1.;
+                            //Fp(i) = 1.;
                         }
                     }
                     // for (uint j=0; j<n_u_dofs; j++)
