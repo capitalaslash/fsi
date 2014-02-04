@@ -7,7 +7,8 @@
 ExtVTKIO::ExtVTKIO (MeshBase const & mesh, Parameters const & par):
     VTKIO (mesh),
     _dirname (par.get<std::string>("output_dir")),
-    _basename (par.get<std::string>("basename"))
+    _basename (par.get<std::string>("basename")),
+    _print_step(par.get<uint>("print_step"))
 {
     system (("mkdir -p " + _dirname).c_str());
     if( _dirname.substr( _dirname.size()-1,1) != "/" )
@@ -59,18 +60,21 @@ void ExtVTKIO::write_pvd( Real const t_in, Real const t_out, Real const dt )
     uint timestep = 0;
     while( time <= t_out )
     {
-      std::stringstream ss;
-      ss << time;
-      xmlTextWriterStartElement(writer, BAD_CAST "DataSet");
-      xmlTextWriterWriteAttribute(writer, BAD_CAST "timestep", BAD_CAST ss.str().c_str());
+      if ((timestep)%_print_step == 0)
+      {
+          std::stringstream ss;
+          ss << time;
+          xmlTextWriterStartElement(writer, BAD_CAST "DataSet");
+          xmlTextWriterWriteAttribute(writer, BAD_CAST "timestep", BAD_CAST ss.str().c_str());
 
-      std::stringstream file_name;
-      file_name << _basename << '_';
-      file_name << std::setw(6) << std::setfill('0') << timestep;
-      file_name << ".pvtu";
+          std::stringstream file_name;
+          file_name << _basename << '_';
+          file_name << std::setw(6) << std::setfill('0') << timestep;
+          file_name << ".pvtu";
 
-      xmlTextWriterWriteAttribute(writer, BAD_CAST "file", BAD_CAST file_name.str().c_str());
-      xmlTextWriterEndElement(writer);
+          xmlTextWriterWriteAttribute(writer, BAD_CAST "file", BAD_CAST file_name.str().c_str());
+          xmlTextWriterEndElement(writer);
+      }
 
       time += dt;
       timestep++;

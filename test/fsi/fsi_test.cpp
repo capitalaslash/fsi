@@ -168,7 +168,7 @@ int main (int argc, char** argv)
 
     es.parameters.set<std::string>("output_dir") = param_file("output_dir", "output/");
     es.parameters.set<std::string>("basename") = param_file("basename", "fsitest");
-    const uint print_step = param_file("print_step", 1);
+    es.parameters.set<uint>("print_step") = param_file("print_step", 1);
 
     // PetscOptionsSetValue("-ksp_monitor_true_residual",PETSC_NULL);
 
@@ -195,8 +195,9 @@ int main (int argc, char** argv)
 
     io_vtk->write_solution(es);
 
-    Real dt = es.parameters.get<Real>("dt");
-    Real t_out = es.parameters.get<Real>("t_out");
+    Real const dt = es.parameters.get<Real>("dt");
+    Real const t_out = es.parameters.get<Real>("t_out");
+    uint const print_step = es.parameters.get<uint>("print_step");
     while (system_vel.time + dt < t_out + 1e-12)
     {
         timestep++;

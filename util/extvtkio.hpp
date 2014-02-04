@@ -27,7 +27,8 @@ protected:
 #endif
 
     std::string _dirname;
-    std::string _basename;
+    std::string const _basename;
+    uint const _print_step;
 };
 
 }
