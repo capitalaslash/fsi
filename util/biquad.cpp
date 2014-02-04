@@ -119,5 +119,5 @@ void generate_biquad( Mesh & mesh, GetPot & param )
         }
     }
 
-    mesh.boundary_info->print_info();
+    //mesh.boundary_info->print_info();
 }
