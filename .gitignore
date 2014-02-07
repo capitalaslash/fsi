@@ -1,4 +1,5 @@
 build*/
-*.e
+install*/
 CMakeLists.txt.user*
+*.e
 *~
