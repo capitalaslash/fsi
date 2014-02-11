@@ -42,6 +42,7 @@
 #include "assembly/interface.hpp"
 #include "util/biquad.hpp"
 #include "util/init.hpp"
+#include "util/stress.hpp"
 #include "bc/pressureramp.hpp"
 
 // Bring in everything from the libMesh namespace
@@ -109,6 +110,18 @@ int main (int argc, char** argv)
 
     InterfaceSystem & interface = es.add_system<InterfaceSystem>("int");
 
+    ExplicitSystem & stress = es.add_system<ExplicitSystem> ("stress");
+    stress.add_variable ("s_00", CONSTANT, MONOMIAL);
+    stress.add_variable ("s_01", CONSTANT, MONOMIAL);
+    stress.add_variable ("s_02", CONSTANT, MONOMIAL);
+    stress.add_variable ("s_10", CONSTANT, MONOMIAL);
+    stress.add_variable ("s_11", CONSTANT, MONOMIAL);
+    stress.add_variable ("s_12", CONSTANT, MONOMIAL);
+    stress.add_variable ("s_20", CONSTANT, MONOMIAL);
+    stress.add_variable ("s_21", CONSTANT, MONOMIAL);
+    stress.add_variable ("s_22", CONSTANT, MONOMIAL);
+    stress.add_variable ("vonMises", CONSTANT, MONOMIAL);
+
     bool const axisym = param_file("axisym", false);
     if (!axisym)
     {
@@ -138,8 +151,9 @@ int main (int argc, char** argv)
     system_vel.attach_assemble_function (assemble_fsi);
     system_vel.attach_init_function (init_zero);
 
-    es.parameters.set<uint>("flag_s") = param_file("flag_s", 12);
-    es.parameters.set<uint>("flag_f") = param_file("flag_f", 11);
+    es.parameters.set<subdomain_id_type>("flag_s") = param_file("flag_s", 12);
+    es.parameters.set<subdomain_id_type>("flag_f") = param_file("flag_f", 11);
+    es.parameters.set<boundary_id_type>("flag_int") = param_file("flag_int", 10);
 
     es.parameters.set<Real>("t_in") = param_file("t_in", 0.);
     es.parameters.set<Real>("t_out") = param_file("t_out", 0.2);
@@ -204,8 +218,8 @@ int main (int argc, char** argv)
         // Incremenet the time counter, set the time and the
         // time step size as parameters in the EquationSystem.
         system_vel.time += dt;
-        system_dx.time += dt;
-        system_dy.time += dt;
+        system_dx .time += dt;
+        system_dy .time += dt;
 
         es.parameters.set<Real> ("time") = system_vel.time;
         es.parameters.set<Real> ("dt")   = dt;
@@ -255,6 +269,9 @@ int main (int argc, char** argv)
         es.get_system("fsi").solve();
         es.get_system("dx").solve();
         es.get_system("dy").solve();
+
+        // Post-process the solution to compute the stresses
+        compute_stress(es);
 
         // move_mesh( es );
 
@@ -419,8 +436,8 @@ void assemble_disp (EquationSystems& es,
 
     Real dt = es.parameters.get<Real>("dt");
 
-    uint const flag_s = es.parameters.get<uint>("flag_s");
-    uint const flag_f = es.parameters.get<uint>("flag_f");
+    subdomain_id_type const flag_s = es.parameters.get<subdomain_id_type>("flag_s");
+    subdomain_id_type const flag_f = es.parameters.get<subdomain_id_type>("flag_f");
 
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
     const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
@@ -662,8 +679,8 @@ void assemble_fsi (EquationSystems& es,
     Real const damp = es.parameters.get<Real>("damp");
     bool const axisym = es.parameters.get<bool>("axisym");
 
-    uint const flag_s = es.parameters.get<uint>("flag_s");
-    uint const flag_f = es.parameters.get<uint>("flag_f");
+    subdomain_id_type const flag_s = es.parameters.get<subdomain_id_type>("flag_s");
+    subdomain_id_type const flag_f = es.parameters.get<subdomain_id_type>("flag_f");
 
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
     const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
