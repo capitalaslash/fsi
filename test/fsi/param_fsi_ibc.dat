@@ -1,0 +1,54 @@
+t_in = 0.
+t_out = 0.01
+dt = 1e-4
+
+print_step = 1
+
+nx = 8
+ny = 6
+nz = 1
+lx = 2.0
+ly = 1.5
+lz = 1.0
+li = 1.0
+
+mesh_file = structured
+#mesh_file = mesh/quad-2spl.msh
+#mesh_file = mesh/quad-2spl_axy.msh
+#mesh_file = lifus3.msh
+#mesh_vert = 1
+flag_int = 10
+
+#axisym = 1
+
+facet_ibc_x = 1.0
+facet_ibc_y = 0.375
+
+# lead
+#rho_f = 1.0340e4
+#mu_f = 2.2e-3
+
+# ref_f
+rho_f = 1.
+mu_f = 1.e-1
+
+# steel
+rho_s = 7.8e3
+E = 2.10e11
+ni = 0.3
+
+# ref_s
+rho_s = 1.
+E = 1.e8
+ni = 0.3
+
+#f_v = -9.81
+f_v = 0.0
+
+damp = 0.0
+pressure_tin = 0.1
+pressure_tout = 1.0
+pressure_max = 4e6
+damp_xmin = -2.1
+damp_xmax = 2.9
+damp_sigma = 5.0
