@@ -107,8 +107,7 @@ int main (int argc, char** argv)
     ExplicitSystem & system_mat = es.add_system<ExplicitSystem>("mat");
     system_mat.add_variable("mat", CONSTANT, MONOMIAL);
 
-    ExplicitSystem & system_int = es.add_system<ExplicitSystem>("interface");
-    system_int.add_variable("interface", SECOND, LAGRANGE);
+    InterfaceSystem & interface = es.add_system<InterfaceSystem>("int");
 
     bool const axisym = param_file("axisym", false);
     if (!axisym)
@@ -177,7 +176,7 @@ int main (int argc, char** argv)
 
     assemble_mat( es, "mat" );
 
-    assemble_interface( es, "interface");
+    interface.assemble();
 
     // Prints information about the system to the screen.
     es.print_info();
@@ -346,7 +345,7 @@ void assemble_disp (EquationSystems& es,
             es.get_system<TransientLinearImplicitSystem> (system_name);
     TransientLinearImplicitSystem & system_vel =
             es.get_system<TransientLinearImplicitSystem> ("fsi");
-    ExplicitSystem & system_i = es.get_system<ExplicitSystem>("interface");
+    InterfaceSystem & system_i = es.get_system<InterfaceSystem>("int");
 
     // Numeric ids corresponding to each variable in the system
     const uint d_var = system.variable_number (system_name);
@@ -395,7 +394,6 @@ void assemble_disp (EquationSystems& es,
     // in future examples.
     const DofMap & dof_map = system.get_dof_map();
     const DofMap & dof_map_vel = system_vel.get_dof_map();
-    const DofMap & dof_map_i = system_i.get_dof_map();
 
     // Define data structures to contain the element matrix
     // and right-hand-side vector contribution.  Following
@@ -410,7 +408,7 @@ void assemble_disp (EquationSystems& es,
     std::vector<dof_id_type> dof_indices;
     std::vector<dof_id_type> dof_indices_d;
     std::vector<dof_id_type> dof_indices_u;
-    std::vector<dof_id_type> dof_indices_i;
+    std::vector<bool> on_interface;
 
     // Now we will loop over all the elements in the mesh that
     // live on the local processor. We will compute the element
@@ -440,7 +438,7 @@ void assemble_disp (EquationSystems& es,
         dof_map.dof_indices (elem, dof_indices);
         dof_map.dof_indices (elem, dof_indices_d, d_var);
         dof_map_vel.dof_indices (elem, dof_indices_u, u_var);
-        dof_map_i.dof_indices (elem, dof_indices_i, 0);
+        system_i.on_interface(elem, on_interface);
 
         const uint n_dofs   = dof_indices.size();
         const uint n_d_dofs = dof_indices_d.size();
@@ -503,15 +501,11 @@ void assemble_disp (EquationSystems& es,
             {
                 for (uint i=0; i<n_d_dofs; i++)
                 {
-                    if((system_i.solution->first_local_index() <= dof_indices_i[i]) &&
-                            (dof_indices_i[i] < system_i.solution->last_local_index()))
+                    if(!on_interface[i])
                     {
-                        if ((*system_i.solution)(dof_indices_i[i]) < 0.5) // not on interface
+                        for (uint j=0; j<n_d_dofs; j++)
                         {
-                            for (uint j=0; j<n_d_dofs; j++)
-                            {
-                                Ke(i,j) += JxW[qp]*dt*grad_b[i][qp]*grad_b[j][qp];
-                            }
+                            Ke(i,j) += JxW[qp]*dt*grad_b[i][qp]*grad_b[j][qp];
                         }
                     }
                 }
@@ -564,7 +558,7 @@ void assemble_fsi (EquationSystems& es,
             es.get_system<TransientLinearImplicitSystem> ("dx");
     TransientLinearImplicitSystem & system_e =
             es.get_system<TransientLinearImplicitSystem> ("dy");
-    ExplicitSystem & system_i = es.get_system<ExplicitSystem>("interface");
+    InterfaceSystem & system_i = es.get_system<InterfaceSystem>("int");
 
     // Numeric ids corresponding to each variable in the system
     const uint u_var = system.variable_number ("ux");
@@ -620,7 +614,6 @@ void assemble_fsi (EquationSystems& es,
     const DofMap & dof_map = system.get_dof_map();
     const DofMap & dof_map_d = system_d.get_dof_map();
     const DofMap & dof_map_e = system_e.get_dof_map();
-    const DofMap & dof_map_i = system_i.get_dof_map();
 
     // Define data structures to contain the element matrix
     // and right-hand-side vector contribution.  Following
@@ -648,7 +641,7 @@ void assemble_fsi (EquationSystems& es,
     std::vector<dof_id_type> dof_indices_p;
     std::vector<dof_id_type> dof_indices_d;
     std::vector<dof_id_type> dof_indices_e;
-    std::vector<dof_id_type> dof_indices_i;
+    std::vector<bool> on_interface;
 
     // Now we will loop over all the elements in the mesh that
     // live on the local processor. We will compute the element
@@ -691,7 +684,7 @@ void assemble_fsi (EquationSystems& es,
         dof_map.dof_indices (elem, dof_indices_p, p_var);
         dof_map_d.dof_indices (elem, dof_indices_d, 0);
         dof_map_e.dof_indices (elem, dof_indices_e, 0);
-        dof_map_i.dof_indices (elem, dof_indices_i, 0);
+        system_i.on_interface(elem, on_interface);
 
         const uint n_dofs   = dof_indices.size();
         const uint n_u_dofs = dof_indices_u.size();
@@ -880,14 +873,10 @@ void assemble_fsi (EquationSystems& es,
 
                 for (uint i=0; i<n_p_dofs; i++)
                 {
-                    if((system_i.solution->first_local_index() <= dof_indices_i[i]) &&
-                            (dof_indices_i[i] < system_i.solution->last_local_index()))
+                    if(!on_interface[i])
                     {
-                        if ((*system_i.solution)(dof_indices_i[i]) < 0.5) // not on interface
-                        {
-                            Kpp(i,i) = 1.;
-                            //Fp(i) = 1.;
-                        }
+                        Kpp(i,i) = 1.;
+                        //Fp(i) = 1.;
                     }
                     // for (uint j=0; j<n_u_dofs; j++)
                     // {
