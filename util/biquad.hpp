@@ -9,8 +9,6 @@
 #include <libmesh/getpot.h>
 #include <libmesh/elem.h>
 
-using namespace libMesh;
-
-void generate_biquad( Mesh & mesh, GetPot & param );
+void generate_biquad( libMesh::Mesh & mesh, GetPot & param );
 
 #endif // BIQUAD_HPP
