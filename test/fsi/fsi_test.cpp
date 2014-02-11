@@ -270,14 +270,14 @@ int main (int argc, char** argv)
         es.get_system("dx").solve();
         es.get_system("dy").solve();
 
-        // Post-process the solution to compute the stresses
-        compute_stress(es);
-
         // move_mesh( es );
 
         // Output evey 1 timesteps to file.
         if ((timestep)%print_step == 0)
         {
+            // Post-process the solution to compute the stresses
+            compute_stress(es);
+
             io_vtk->write_solution(es);
         }
     }
@@ -414,6 +414,8 @@ void assemble_fsi (EquationSystems& es,
 
     subdomain_id_type const flag_s = es.parameters.get<subdomain_id_type>("flag_s");
     subdomain_id_type const flag_f = es.parameters.get<subdomain_id_type>("flag_f");
+
+    Real const interface_length = system_i.length();
 
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
     const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();

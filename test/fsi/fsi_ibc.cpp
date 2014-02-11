@@ -280,14 +280,14 @@ int main (int argc, char** argv)
         es.get_system("dx").solve();
         es.get_system("dy").solve();
 
-        // Post-process the solution to compute the stresses
-        compute_stress(es);
-
         // move_mesh( es );
 
         // Output evey 1 timesteps to file.
         if ((timestep)%print_step == 0)
         {
+            // Post-process the solution to compute the stresses
+            compute_stress(es);
+
             io_vtk->write_solution(es);
         }
     }
