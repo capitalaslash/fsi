@@ -72,6 +72,11 @@ void generate_biquad( Mesh & mesh, GetPot & param )
                     else
                         abort();
                 }
+                // check if facet is on interface
+                else if( std::fabs(side_y - li) < toll)
+                {
+                    side_flag = 10;
+                }
 
                 if(side_flag != 0)
                     mesh.boundary_info->add_side(elem,s,side_flag);
@@ -117,6 +122,11 @@ void generate_biquad( Mesh & mesh, GetPot & param )
                         side_flag = 6;
                     else
                         abort();
+                }
+                // check if facet is on interface
+                else if( std::fabs(side_x - li) < toll)
+                {
+                    side_flag = 10;
                 }
 
                 if(side_flag != 0)
