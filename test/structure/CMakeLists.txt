@@ -16,3 +16,7 @@ target_link_libraries(structure_seg2d ${LIBS})
 
 add_executable(structure_seg3d structure_seg3d.cpp)
 target_link_libraries(structure_seg3d ${LIBS})
+
+add_executable(bending_board bending_board.cpp)
+target_link_libraries(bending_board ${LIBS})
+
