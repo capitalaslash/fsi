@@ -189,7 +189,7 @@ int main (int argc, char** argv)
     es.parameters.set<uint>("linear solver maximum iterations") = 250;
     es.parameters.set<Real>("linear solver tolerance") = TOLERANCE;
 
-    es.parameters.set<std::string>("output_dir") = param_file("output_dir", "output/");
+    es.parameters.set<std::string>("output_dir") = param_file("output_dir", "output_ibc/");
     es.parameters.set<std::string>("basename") = param_file("basename", "fsitest");
     es.parameters.set<uint>("print_step") = param_file("print_step", 1);
 
