@@ -415,8 +415,6 @@ void assemble_fsi (EquationSystems& es,
     subdomain_id_type const flag_s = es.parameters.get<subdomain_id_type>("flag_s");
     subdomain_id_type const flag_f = es.parameters.get<subdomain_id_type>("flag_f");
 
-    Real const interface_length = system_i.length();
-
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
     const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
 
