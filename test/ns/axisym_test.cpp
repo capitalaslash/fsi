@@ -46,6 +46,7 @@
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/zero_function.h"
 #include "libmesh/dirichlet_boundaries.h"
+#include <libmesh/analytic_function.h>
 
 // For systems of equations the \p DenseSubMatrix
 // and \p DenseSubVector provide convenient ways for
@@ -73,11 +74,16 @@ Real external_pressure( Point const & /*point*/, Parameters const & /*param*/ )
     return 1.;
 }
 
-void inlet_vel (DenseVector<Number>& output, const Point& p, const Real /*t*/)
+void inlet_vel_x (DenseVector<Number>& output, const Point& p, const Real /*t*/)
 {
-    output(0) = 0.0;
-    //output(1) = 0.25*(1.0 - x * x);
-    output(1) = -1.0;
+    //output(0) = p(0)*p(1)*p(1);
+    output(0) = p(0);
+}
+
+void inlet_vel_y (DenseVector<Number>& output, const Point& p, const Real /*t*/)
+{
+    //output(1) = - p(0)*p(0)*p(1);
+    output(1) = - 2*p(1);
 }
 
 // The main program.
@@ -128,17 +134,18 @@ int main (int argc, char** argv)
     const uint p_var = system_vel.add_variable ("p", FIRST);
 
     const std::set<boundary_id_type> bc_sym = {3}; // left side
-    const std::set<boundary_id_type> bc_wall = {1}; // right side
-    const std::set<boundary_id_type> bc_in = {0}; // bottom
-    const std::set<boundary_id_type> bc_out = {2}; // top
+    //const std::set<boundary_id_type> bc_wall = {0}; // right side
+    const std::set<boundary_id_type> bc_in = {0,1,2}; // bottom
+    //const std::set<boundary_id_type> bc_out = {1}; // top
 
-    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_wall, {u_var, v_var}, ZeroFunction<Real>() ) );
+    //system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_wall, {u_var, v_var}, ZeroFunction<Real>() ) );
     system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_sym, {u_var}, ZeroFunction<Real>() ) );
 //    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_sym, {p_var}, ConstFunction<Real>(1.0) ) );
 //    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_sym, {p_var}, PressureRamp(0.1,0.9,2.0) ) );
-    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_in, {u_var}, ZeroFunction<Real>() ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_in, {u_var}, AnalyticFunction<>(&inlet_vel_x) ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_in, {v_var}, AnalyticFunction<>(&inlet_vel_y) ) );
 //    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_in, {p_var}, ConstFunction<>(1.0) ) );
-    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_out, {u_var},        ZeroFunction<Real>() ) );
+  //  system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( bc_out, {u_var},        ZeroFunction<Real>() ) );
 
     // Give the system a pointer to the matrix assembly
     // function.
