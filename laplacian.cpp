@@ -1,3 +1,4 @@
+#include <libmesh/libmesh.h>
 #include <libmesh/linear_implicit_system.h>
 #include <libmesh/dof_map.h>
 #include <libmesh/quadrature_gauss.h>
