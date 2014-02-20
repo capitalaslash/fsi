@@ -46,7 +46,7 @@ inline void InterfaceSystem::on_interface( Elem const* e, std::vector<bool>& on_
     std::vector<dof_id_type> dof_indices;
     get_dof_map().dof_indices(e, dof_indices, 0);
 
-    on_int.resize(dof_indices.size(), false);
+    on_int.resize(dof_indices.size());
 
     for(uint i = 0; i < dof_indices.size(); i++)
     {
@@ -54,6 +54,8 @@ inline void InterfaceSystem::on_interface( Elem const* e, std::vector<bool>& on_
                 (dof_indices[i] < solution->last_local_index()) &&
                 ((*solution)(dof_indices[i]) > 0.5) )
             on_int[i] = true;
+        else
+            on_int[i] = false;
     }
 }
 
