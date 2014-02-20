@@ -63,7 +63,7 @@ void generate_biquad( Mesh & mesh, GetPot & param )
                     else if ( side_y > li && side_y < ly &&
                               std::fabs( side_x - ox ) < toll )
                         side_flag = 4;
-                    else if ( side_y > 0. && side_y < li &&
+                    else if ( side_y > oy && side_y < li &&
                               std::fabs( side_x - ox ) < toll )
                         side_flag = 5;
                     else if ( std::fabs( side_y - oy) < toll &&
