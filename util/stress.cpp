@@ -55,85 +55,88 @@ void compute_stress(EquationSystems& es)
   // To store the stress tensor on each element
   DenseMatrix<Number> elem_sigma;
 
-  Real mu = es.parameters.get<Real>("mu_s");
-  Real lambda = es.parameters.get<Real>("lambda");
+  Real const mu = es.parameters.get<Real>("mu_s");
+  Real const lambda = es.parameters.get<Real>("lambda");
+  subdomain_id_type const flag_s = es.parameters.get<subdomain_id_type>("flag_s");
 
   MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
   const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
 
   for ( ; el != end_el; ++el)
   {
-    const Elem* elem = *el;
+      const Elem* elem = *el;
 
-    dof_map_d.dof_indices (elem, dof_indices_var[0], 0);
-    dof_map_e.dof_indices (elem, dof_indices_var[1], 0);
-    dof_map_d.dof_indices (elem, dof_indices_d, 0);
-    dof_map_e.dof_indices (elem, dof_indices_e, 0);
-
-    const uint n_dofs = dof_indices_d.size();
-
-    fe->reinit (elem);
-
-    elem_sigma.resize(3, 3);
-
-    for (uint qp=0; qp<qrule.n_points(); qp++)
-    {
-        // Get the gradient at this quadrature point
-        Gradient grad_d;
-        Gradient grad_e;
-        for(uint l=0; l<n_dofs; l++)
-        {
-            grad_d.add_scaled(dphi[l][qp], system_d.current_solution(dof_indices_d[l]));
-            grad_e.add_scaled(dphi[l][qp], system_e.current_solution(dof_indices_e[l]));
-        }
-
-        for (uint j=0; j<dim; j++)
-        {
-            elem_sigma(0,j) += JxW[qp]*mu*grad_d(j);
-            elem_sigma(j,0) += JxW[qp]*mu*grad_d(j);
-            elem_sigma(1,j) += JxW[qp]*mu*grad_e(j);
-            elem_sigma(j,1) += JxW[qp]*mu*grad_e(j);
-        }
-        const Real div = (grad_d(0) + grad_e(1));
-        elem_sigma(0,0) += JxW[qp]*lambda*div;
-        elem_sigma(1,1) += JxW[qp]*lambda*div;
-    }
-
-    // Get the average stresses by dividing by the element volume
-    elem_sigma.scale(1./elem->volume());
-
-    // load elem_sigma data into stress_system
-    for(uint i=0; i<dim; i++)
-      for(uint j=0; j<dim; j++)
+      if (elem->subdomain_id() == flag_s)
       {
-        dof_map_s.dof_indices (elem, dof_indices_s, sigma_vars[i][j]);
+          dof_map_d.dof_indices (elem, dof_indices_var[0], 0);
+          dof_map_e.dof_indices (elem, dof_indices_var[1], 0);
+          dof_map_d.dof_indices (elem, dof_indices_d, 0);
+          dof_map_e.dof_indices (elem, dof_indices_e, 0);
 
-        // We are using CONSTANT MONOMIAL basis functions, hence we only need to get
-        // one dof index per variable
-        dof_id_type dof_index = dof_indices_s[0];
+          const uint n_dofs = dof_indices_d.size();
 
-        if( (stress.solution->first_local_index() <= dof_index) &&
-            (dof_index < stress.solution->last_local_index()) )
-        {
-          stress.solution->set(dof_index, elem_sigma(i,j));
-        }
+          fe->reinit (elem);
 
+          elem_sigma.resize(3, 3);
+
+          for (uint qp=0; qp<qrule.n_points(); qp++)
+          {
+              // Get the gradient at this quadrature point
+              Gradient grad_d;
+              Gradient grad_e;
+              for(uint l=0; l<n_dofs; l++)
+              {
+                  grad_d.add_scaled(dphi[l][qp], system_d.current_solution(dof_indices_d[l]));
+                  grad_e.add_scaled(dphi[l][qp], system_e.current_solution(dof_indices_e[l]));
+              }
+
+              for (uint j=0; j<dim; j++)
+              {
+                  elem_sigma(0,j) += JxW[qp]*mu*grad_d(j);
+                  elem_sigma(j,0) += JxW[qp]*mu*grad_d(j);
+                  elem_sigma(1,j) += JxW[qp]*mu*grad_e(j);
+                  elem_sigma(j,1) += JxW[qp]*mu*grad_e(j);
+              }
+              const Real div = (grad_d(0) + grad_e(1));
+              elem_sigma(0,0) += JxW[qp]*lambda*div;
+              elem_sigma(1,1) += JxW[qp]*lambda*div;
+          }
+
+          // Get the average stresses by dividing by the element volume
+          elem_sigma.scale(1./elem->volume());
+
+          // load elem_sigma data into stress_system
+          for(uint i=0; i<dim; i++)
+              for(uint j=0; j<dim; j++)
+              {
+                  dof_map_s.dof_indices (elem, dof_indices_s, sigma_vars[i][j]);
+
+                  // We are using CONSTANT MONOMIAL basis functions, hence we only need to get
+                  // one dof index per variable
+                  dof_id_type dof_index = dof_indices_s[0];
+
+                  if( (stress.solution->first_local_index() <= dof_index) &&
+                          (dof_index < stress.solution->last_local_index()) )
+                  {
+                      stress.solution->set(dof_index, elem_sigma(i,j));
+                  }
+
+              }
+
+          // Also, the von Mises stress
+          Number vonMises_value = std::sqrt( 0.5*( pow<2>(elem_sigma(0,0) - elem_sigma(1,1)) +
+                                                   pow<2>(elem_sigma(1,1) - elem_sigma(2,2)) +
+                                                   pow<2>(elem_sigma(2,2) - elem_sigma(0,0)) +
+                                                   6.*(pow<2>(elem_sigma(0,1)) + pow<2>(elem_sigma(1,2)) + pow<2>(elem_sigma(2,0)))
+                                                   ) );
+          dof_map_s.dof_indices (elem, dof_indices_s, vonMises_var);
+          dof_id_type dof_index = dof_indices_s[0];
+          if( (stress.solution->first_local_index() <= dof_index) &&
+                  (dof_index < stress.solution->last_local_index()) )
+          {
+              stress.solution->set(dof_index, vonMises_value);
+          }
       }
-
-    // Also, the von Mises stress
-    Number vonMises_value = std::sqrt( 0.5*( pow<2>(elem_sigma(0,0) - elem_sigma(1,1)) +
-                                             pow<2>(elem_sigma(1,1) - elem_sigma(2,2)) +
-                                             pow<2>(elem_sigma(2,2) - elem_sigma(0,0)) +
-                                             6.*(pow<2>(elem_sigma(0,1)) + pow<2>(elem_sigma(1,2)) + pow<2>(elem_sigma(2,0)))
-                                           ) );
-    dof_map_s.dof_indices (elem, dof_indices_s, vonMises_var);
-    dof_id_type dof_index = dof_indices_s[0];
-    if( (stress.solution->first_local_index() <= dof_index) &&
-        (dof_index < stress.solution->last_local_index()) )
-    {
-      stress.solution->set(dof_index, vonMises_value);
-    }
-
   }
 
   // Should call close and update when we set vector entries directly
