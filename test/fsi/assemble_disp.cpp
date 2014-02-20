@@ -1,4 +1,6 @@
 
+#include "assemble_disp.hpp"
+
 #include <libmesh/libmesh.h>
 #include <libmesh/equation_systems.h>
 #include <libmesh/transient_system.h>

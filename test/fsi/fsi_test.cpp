@@ -44,6 +44,7 @@
 #include "util/init.hpp"
 #include "util/stress.hpp"
 #include "bc/pressureramp.hpp"
+#include "assemble_disp.hpp"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
@@ -52,11 +53,6 @@ using namespace libMesh;
 // matrix and right-hand-side.
 void assemble_fsi (EquationSystems& es,
                    const std::string& system_name);
-
-void assemble_disp (EquationSystems& es,
-                    const std::string& system_name);
-
-void move_mesh( EquationSystems& es );
 
 Real external_pressure( Point const & /*point*/, Parameters const & /*param*/ )
 {

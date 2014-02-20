@@ -5,6 +5,8 @@
 #include <libmesh/linear_implicit_system.h>
 #include <libmesh/dof_map.h>
 
+#include "move_mesh.hpp"
+
 using namespace libMesh;
 
 void move_mesh( EquationSystems& es )

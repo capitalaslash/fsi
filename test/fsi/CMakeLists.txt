@@ -1,14 +1,20 @@
+set(HDRS
+  assemle_disp.hpp
+  move_mesh.hpp
+)
 
-set(SRC_COMMON
+set(SRCS
   assemble_disp.cpp
   move_mesh.cpp
 )
 
-add_executable(fsi_test fsi_test.cpp ${SRC_COMMON})
-target_link_libraries(fsi_test ${LIBS})
+add_library(fsitest ${SRCS})
+
+add_executable(fsi_test fsi_test.cpp)
+target_link_libraries(fsi_test fsitest ${LIBS})
 
 FSI_Copy_File(fsi_ibc_param param_fsi_ibc.dat)
 
-add_executable(fsi_ibc fsi_ibc.cpp ${SRC_COMMON})
-target_link_libraries(fsi_ibc ${LIBS})
+add_executable(fsi_ibc fsi_ibc.cpp)
+target_link_libraries(fsi_ibc fsitest ${LIBS})
 
