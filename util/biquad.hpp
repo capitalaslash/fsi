@@ -11,4 +11,6 @@
 
 void generate_biquad( libMesh::Mesh & mesh, GetPot & param );
 
+void generate_barrel( libMesh::Mesh & mesh, GetPot & param );
+
 #endif // BIQUAD_HPP
