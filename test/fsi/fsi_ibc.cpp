@@ -44,7 +44,7 @@
 #include "util/biquad.hpp"
 #include "util/init.hpp"
 #include "util/stress.hpp"
-#include "bc/pressureramp.hpp"
+#include "bc/ext_pressure.hpp"
 #include "assemble_disp.hpp"
 
 // Bring in everything from the libMesh namespace
@@ -55,12 +55,10 @@ using namespace libMesh;
 void assemble_fsi (EquationSystems& es,
                    const std::string& system_name);
 
-
-
-Real external_pressure( Point const & /*point*/, Parameters const & /*param*/ )
-{
-    return 1.;
-}
+//Real external_pressure( Point const & /*point*/, Parameters const & /*param*/ )
+//{
+//    return 1.;
+//}
 
 // The main program.
 int main (int argc, char** argv)
@@ -127,25 +125,17 @@ int main (int argc, char** argv)
     stress.add_variable ("s_22", CONSTANT, MONOMIAL);
     stress.add_variable ("vonMises", CONSTANT, MONOMIAL);
 
-    bool const axisym = param_file("axisym", false);
-    if (!axisym)
-    {
-        // ZERO CROSS COMP
-        system_dx .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3,6}, {dx_var}, ZeroFunction<Real>() ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3,6}, {u_var},  ZeroFunction<Real>() ) );
+    ExplicitSystem & ext_pressure = es.add_system<ExplicitSystem>("ext_pressure");
+    ext_pressure.add_variable("p0", FIRST);
 
-        system_dy .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,5}, {dy_var}, ZeroFunction<Real>() ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,5}, {v_var},  ZeroFunction<Real>() ) );
-    }
-    else
-    {
-        // ZERO CROSS COMP
-        system_dy .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3,6}, {dy_var}, ZeroFunction<Real>() ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3,6}, {v_var},  ZeroFunction<Real>() ) );
+    system_dy .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,5}, {dy_var}, ZeroFunction<Real>() ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,5}, {v_var},  ZeroFunction<Real>() ) );
 
-        system_dx .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,5}, {dx_var}, ZeroFunction<Real>() ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,5}, {u_var},  ZeroFunction<Real>() ) );
-    }
+    system_dx .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3,6}, {dx_var}, ZeroFunction<Real>() ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {u_var},  ZeroFunction<Real>() ) );
+
+//    system_dy .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {dy_var}, ZeroFunction<Real>() ) );
+//    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {v_var},  ZeroFunction<Real>() ) );
 
     system_dx.attach_assemble_function (assemble_disp);
     system_dx.attach_init_function (init_zero);
@@ -186,6 +176,11 @@ int main (int argc, char** argv)
 
     es.parameters.set<uint>("linear solver maximum iterations") = 250;
     es.parameters.set<Real>("linear solver tolerance") = TOLERANCE;
+
+    es.parameters.set<Real>("pressure_max") = param_file("pressure_max", 1.0);
+    es.parameters.set<Real>("pressure_tin") = param_file("pressure_tin", 0.0);
+    es.parameters.set<Real>("pressure_tout") = param_file("pressure_tout", 1.0);
+    es.parameters.set<Real>("pressure_sigma") = param_file("pressure_sigma", 1.0);
 
     es.parameters.set<std::string>("output_dir") = param_file("output_dir", "output_ibc/");
     es.parameters.set<std::string>("basename") = param_file("basename", "fsitest");
@@ -228,6 +223,7 @@ int main (int argc, char** argv)
         system_vel.time += dt;
         system_dx .time += dt;
         system_dy .time += dt;
+        ext_pressure.time += dt;
 
         es.parameters.set<Real> ("time") = system_vel.time;
         es.parameters.set<Real> ("dt")   = dt;
@@ -285,6 +281,7 @@ int main (int argc, char** argv)
         {
             // Post-process the solution to compute the stresses
             compute_stress(es);
+            compute_ext_pressure(es);
 
             io_vtk->write_solution(es);
         }
@@ -423,10 +420,9 @@ void assemble_fsi (EquationSystems& es,
     subdomain_id_type const flag_s = es.parameters.get<subdomain_id_type>("flag_s");
     subdomain_id_type const flag_f = es.parameters.get<subdomain_id_type>("flag_f");
 
-    Point const point_ibc(es.parameters.get<Real>("facet_ibc_x"),
-                          es.parameters.get<Real>("facet_ibc_y"));
 
-    Real const interface_length = system_i.length();
+
+    ExtPressure p0(es.parameters);
 
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
     const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
@@ -654,46 +650,46 @@ void assemble_fsi (EquationSystems& es,
             }
 
             // loop on element sides
-            for (uint s=0; s<elem->n_sides(); s++)
-            {
-                AutoPtr<Elem const> side (elem->build_side(s));
-                Point const& centroid = side->centroid();
+//            for (uint s=0; s<elem->n_sides(); s++)
+//            {
+//                AutoPtr<Elem const> side (elem->build_side(s));
+//                Point const& centroid = side->centroid();
 
-                // internal bc
-                if((centroid - point_ibc).size() < 1e-6)
-                {
-                    {
-                        const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
-                        const std::vector<Real>& JxWface = fe_face->get_JxW();
-                        const std::vector<Point >& qface_point = fe_face->get_xyz();
-                        const std::vector<Point>& normals = fe_face->get_normals();
+//                // internal bc
+//                if((centroid - point_ibc).size() < 1e-6)
+//                {
+//                    {
+//                        const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
+//                        const std::vector<Real>& JxWface = fe_face->get_JxW();
+//                        const std::vector<Point >& qface_point = fe_face->get_xyz();
+//                        const std::vector<Point>& normals = fe_face->get_normals();
 
-                        fe_face->reinit(elem, s);
+//                        fe_face->reinit(elem, s);
 
-                        for (uint qp=0; qp<qface.n_points(); qp++)
-                        {
-                            Real const JxWfaceqp = (axisym)? JxWface[qp]*q_point[qp](0):JxWface[qp];
+//                        for (uint qp=0; qp<qface.n_points(); qp++)
+//                        {
+//                            Real const JxWfaceqp = (axisym)? JxWface[qp]*q_point[qp](0):JxWface[qp];
 
-                            // const Real xf = qface_point[qp](0);
-                            // const Real yf = qface_point[qp](1);
+//                            // const Real xf = qface_point[qp](0);
+//                            // const Real yf = qface_point[qp](1);
 
-                            // const Real penalty = 1.e10;
+//                            // const Real penalty = 1.e10;
 
-                            const Real value = - interface_length * external_pressure( qface_point[qp], es.parameters ) / side->length(0, 1);
+//                            const Real value = - interface_length * external_pressure( qface_point[qp], es.parameters ) / side->length(0, 1);
 
-                            // for (unsigned int i=0; i<phi_face.size(); i++)
-                            // for (unsigned int j=0; j<phi_face.size(); j++)
-                            // Kuu(i,j) += JxW_face[qp]*penalty*phi_face[i][qp]*phi_face[j][qp];
+//                            // for (unsigned int i=0; i<phi_face.size(); i++)
+//                            // for (unsigned int j=0; j<phi_face.size(); j++)
+//                            // Kuu(i,j) += JxW_face[qp]*penalty*phi_face[i][qp]*phi_face[j][qp];
 
-                            for (uint i=0; i<phi_face.size(); i++)
-                            {
-                                Fu(i) -= JxWfaceqp*dt*value*normals[qp](0)*phi_face[i][qp];
-                                Fv(i) -= JxWfaceqp*dt*value*normals[qp](1)*phi_face[i][qp];
-                            }
-                        }
-                    }
-                }
-            }
+//                            for (uint i=0; i<phi_face.size(); i++)
+//                            {
+//                                Fu(i) -= JxWfaceqp*dt*value*normals[qp](0)*phi_face[i][qp];
+//                                Fv(i) -= JxWfaceqp*dt*value*normals[qp](1)*phi_face[i][qp];
+//                            }
+//                        }
+//                    }
+//                }
+//            }
         }
         // fluid domain
         else if (elem->subdomain_id() == flag_f)
@@ -715,7 +711,7 @@ void assemble_fsi (EquationSystems& es,
 
                 for (uint i=0; i<n_u_dofs; i++)
                 {
-                    Fu(i) += JxWqp*rho_f*(u_old+f_u*dt)*phi[i][qp];
+                    Fu(i) += JxWqp*rho_f*(u_old+(f_u - p0.grad_r(q_point[qp], system.time))*dt)*phi[i][qp];
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kuu(i,j) += JxWqp*( rho_f*phi[j][qp]*phi[i][qp]
@@ -762,46 +758,45 @@ void assemble_fsi (EquationSystems& es,
                 }
             }
 
-
             // loop on element sides
-            for (uint s=0; s<elem->n_sides(); s++)
-            {
-                // AutoPtr<Elem> side (elem->build_side(s));
-                // check if side in on boundary
-                if (elem->neighbor(s) == NULL)
-                {
-                    if (mesh.boundary_info->has_boundary_id(elem, s, 6))
-                    {
-                        const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
-                        const std::vector<Real>& JxWface = fe_face->get_JxW();
-                        const std::vector<Point >& qface_point = fe_face->get_xyz();
-                        const std::vector<Point>& normals = fe_face->get_normals();
+//            for (uint s=0; s<elem->n_sides(); s++)
+//            {
+//                // AutoPtr<Elem> side (elem->build_side(s));
+//                // check if side in on boundary
+//                if (elem->neighbor(s) == NULL)
+//                {
+//                    if (mesh.boundary_info->has_boundary_id(elem, s, 6) )
+//                    {
+//                        const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
+//                        const std::vector<Real>& JxWface = fe_face->get_JxW();
+//                        const std::vector<Point >& qface_point = fe_face->get_xyz();
+//                        const std::vector<Point>& normals = fe_face->get_normals();
 
-                        fe_face->reinit(elem, s);
+//                        fe_face->reinit(elem, s);
 
-                        for (uint qp=0; qp<qface.n_points(); qp++)
-                        {
-                            Real const JxWfaceqp = (axisym)? JxWface[qp]*q_point[qp](0):JxWface[qp];
-                            // const Real xf = qface_point[qp](0);
-                            // const Real yf = qface_point[qp](1);
+//                        for (uint qp=0; qp<qface.n_points(); qp++)
+//                        {
+//                            Real const JxWfaceqp = (axisym)? JxWface[qp]*q_point[qp](0):JxWface[qp];
+//                            // const Real xf = qface_point[qp](0);
+//                            // const Real yf = qface_point[qp](1);
 
-                            // const Real penalty = 1.e10;
+//                            // const Real penalty = 1.e10;
 
-                            const Real value = external_pressure( qface_point[qp], es.parameters );
+//                            const Real value = 1.;
 
-                            // for (unsigned int i=0; i<phi_face.size(); i++)
-                            // for (unsigned int j=0; j<phi_face.size(); j++)
-                            // Kuu(i,j) += JxW_face[qp]*penalty*phi_face[i][qp]*phi_face[j][qp];
+//                            // for (unsigned int i=0; i<phi_face.size(); i++)
+//                            // for (unsigned int j=0; j<phi_face.size(); j++)
+//                            // Kuu(i,j) += JxW_face[qp]*penalty*phi_face[i][qp]*phi_face[j][qp];
 
-                            for (uint i=0; i<phi_face.size(); i++)
-                            {
-                                Fu(i) -= JxWfaceqp*dt*value*normals[qp](0)*phi_face[i][qp];
-                                Fv(i) -= JxWfaceqp*dt*value*normals[qp](1)*phi_face[i][qp];
-                            }
-                        }
-                    }
-                }
-            }
+//                            for (uint i=0; i<phi_face.size(); i++)
+//                            {
+//                                Fu(i) -= JxWfaceqp*dt*value*normals[qp](0)*phi_face[i][qp];
+//                                Fv(i) -= JxWfaceqp*dt*value*normals[qp](1)*phi_face[i][qp];
+//                            }
+//                        }
+//                    }
+//                }
+//            }
         }
         else
         {
