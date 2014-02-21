@@ -118,25 +118,11 @@ int main (int argc, char** argv)
     stress.add_variable ("s_22", CONSTANT, MONOMIAL);
     stress.add_variable ("vonMises", CONSTANT, MONOMIAL);
 
-    bool const axisym = param_file("axisym", false);
-    if (!axisym)
-    {
-        // ZERO CROSS COMP
-        system_dx .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {dx_var}, ZeroFunction<Real>() ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {u_var},  ZeroFunction<Real>() ) );
+    system_dx .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3,6}, {dx_var}, ZeroFunction<Real>() ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {u_var},  ZeroFunction<Real>() ) );
 
-        system_dy .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,4,5}, {dy_var}, ZeroFunction<Real>() ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,4,5}, {v_var},  ZeroFunction<Real>() ) );
-    }
-    else
-    {
-        // ZERO CROSS COMP
-        system_dy .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {dy_var}, ZeroFunction<Real>() ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {v_var},  ZeroFunction<Real>() ) );
-
-        system_dx .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,4,5}, {dx_var}, ZeroFunction<Real>() ) );
-        system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,4,5}, {u_var},  ZeroFunction<Real>() ) );
-    }
+    system_dy .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,5}, {dy_var}, ZeroFunction<Real>() ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,5}, {v_var},  ZeroFunction<Real>() ) );
 
     system_dx.attach_assemble_function (assemble_disp);
     system_dx.attach_init_function (init_zero);
