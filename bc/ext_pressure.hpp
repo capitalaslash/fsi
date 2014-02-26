@@ -52,15 +52,21 @@ void compute_ext_pressure(EquationSystems& es)
 
     ExtPressure p0 (es.parameters);
 
+    subdomain_id_type const flag_f = es.parameters.get<subdomain_id_type>("flag_f");
+
     MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
     const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
 
     for ( ; el != end_el; ++el)
     {
         const Elem* elem = *el;
-        dof_map.dof_indices (elem, dof_indices);
-        for (uint i=0; i<dof_indices.size(); i++)
-            sys.solution->set(dof_indices[i], p0(elem->point(i), sys.time));
+
+        if (elem->subdomain_id() == flag_f)
+        {
+            dof_map.dof_indices (elem, dof_indices);
+            for (uint i=0; i<dof_indices.size(); i++)
+                sys.solution->set(dof_indices[i], p0(elem->point(i), sys.time));
+        }
     }
 }
 
