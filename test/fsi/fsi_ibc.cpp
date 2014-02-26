@@ -106,7 +106,7 @@ int main (int argc, char** argv)
 
     const uint u_var = system_vel.add_variable ("ux", SECOND);
     const uint v_var = system_vel.add_variable ("uy", SECOND);
-    system_vel.add_variable ("p", FIRST);
+    const uint p_var = system_vel.add_variable ("p", FIRST);
 
     ExplicitSystem & system_mat = es.add_system<ExplicitSystem>("mat");
     system_mat.add_variable("mat", CONSTANT, MONOMIAL);
@@ -131,11 +131,11 @@ int main (int argc, char** argv)
     system_dy .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,5}, {dy_var}, ZeroFunction<Real>() ) );
     system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {1,5}, {v_var},  ZeroFunction<Real>() ) );
 
-    system_dx .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3,6}, {dx_var}, ZeroFunction<Real>() ) );
+    system_dx .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {dx_var}, ZeroFunction<Real>() ) );
     system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {u_var},  ZeroFunction<Real>() ) );
 
-//    system_dy .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {dy_var}, ZeroFunction<Real>() ) );
-//    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {3}, {v_var},  ZeroFunction<Real>() ) );
+    system_dx .get_dof_map().add_dirichlet_boundary( DirichletBoundary( {6}, {dx_var}, ZeroFunction<Real>() ) );
+    system_vel.get_dof_map().add_dirichlet_boundary( DirichletBoundary( {6}, {u_var,p_var},  ZeroFunction<Real>() ) );
 
     system_dx.attach_assemble_function (assemble_disp);
     system_dx.attach_init_function (init_zero);
