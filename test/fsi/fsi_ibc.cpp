@@ -150,9 +150,6 @@ int main (int argc, char** argv)
     es.parameters.set<subdomain_id_type>("flag_f") = param_file("flag_f", 11);
     es.parameters.set<boundary_id_type>("flag_int") = param_file("flag_int", 10);
 
-    es.parameters.set<Real>("facet_ibc_x") = param_file("facet_ibc_x", 0.0);
-    es.parameters.set<Real>("facet_ibc_y") = param_file("facet_ibc_y", 0.0);
-
     es.parameters.set<Real>("t_in") = param_file("t_in", 0.);
     es.parameters.set<Real>("t_out") = param_file("t_out", 0.2);
     es.parameters.set<Real>("dt") = param_file("dt", 1.e-3);
@@ -183,7 +180,7 @@ int main (int argc, char** argv)
     es.parameters.set<Real>("pressure_sigma") = param_file("pressure_sigma", 1.0);
 
     es.parameters.set<std::string>("output_dir") = param_file("output_dir", "output_ibc/");
-    es.parameters.set<std::string>("basename") = param_file("basename", "fsitest");
+    es.parameters.set<std::string>("basename") = param_file("basename", "fsiibc");
     es.parameters.set<uint>("print_step") = param_file("print_step", 1);
 
     // PetscOptionsSetValue("-ksp_monitor_true_residual",PETSC_NULL);
@@ -419,8 +416,6 @@ void assemble_fsi (EquationSystems& es,
 
     subdomain_id_type const flag_s = es.parameters.get<subdomain_id_type>("flag_s");
     subdomain_id_type const flag_f = es.parameters.get<subdomain_id_type>("flag_f");
-
-
 
     ExtPressure p0(es.parameters);
 
@@ -675,7 +670,8 @@ void assemble_fsi (EquationSystems& es,
 
 //                            // const Real penalty = 1.e10;
 
-//                            const Real value = - interface_length * external_pressure( qface_point[qp], es.parameters ) / side->length(0, 1);
+//                            //const Real value = external_pressure( qface_point[qp], es.parameters );
+//                            const Real value = pressure_bc(qface_point[qp], system.time);
 
 //                            // for (unsigned int i=0; i<phi_face.size(); i++)
 //                            // for (unsigned int j=0; j<phi_face.size(); j++)
