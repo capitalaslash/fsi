@@ -11,6 +11,7 @@ struct ExtPressure
     Real const t_in;
     Real const t_out;
     Real const sigma;
+    Real const x0 = 0.0;
 
     explicit ExtPressure (libMesh::Parameters const& p):
         max(p.get<Real>("pressure_max")),
@@ -31,12 +32,15 @@ struct ExtPressure
 
     Real operator() (Point const& p, Real const t)
     {
+        return std::exp(-(p(0)-x0)*(p(0)-x0)/sigma) * time_evol(t);
         return std::exp(-p(0)*p(0)/sigma) * time_evol(t);
+        //return std::exp(-p(0)/sigma) * time_evol(t);
     }
 
     Real grad( Point const& p, Real const t)
     {
-        return -2.*p(0)*this->operator ()(p, t) / sigma;
+        return -2.*(p(0)-x0)*this->operator ()(p, t) / sigma;
+        //return -this->operator ()(p, t) / sigma;
     }
 };
 
