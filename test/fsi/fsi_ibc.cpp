@@ -172,7 +172,7 @@ int main (int argc, char** argv)
     es.parameters.set<Real>("ale_factor") = param_file ("ale_factor", 1e7);
 
     es.parameters.set<uint>("linear solver maximum iterations") = 250;
-    es.parameters.set<Real>("linear solver tolerance") = TOLERANCE;
+    es.parameters.set<Real>("linear solver tolerance") = param_file("tolerance", TOLERANCE);
 
     es.parameters.set<Real>("pressure_max") = param_file("pressure_max", 1.0);
     es.parameters.set<Real>("pressure_tin") = param_file("pressure_tin", 0.0);
