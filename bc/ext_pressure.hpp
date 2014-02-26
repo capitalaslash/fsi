@@ -34,7 +34,7 @@ struct ExtPressure
         return std::exp(-p(0)*p(0)/sigma) * time_evol(t);
     }
 
-    Real grad_r( Point const& p, Real const t)
+    Real grad( Point const& p, Real const t)
     {
         return -2.*p(0)*this->operator ()(p, t) / sigma;
     }

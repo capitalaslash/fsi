@@ -711,7 +711,7 @@ void assemble_fsi (EquationSystems& es,
 
                 for (uint i=0; i<n_u_dofs; i++)
                 {
-                    Fu(i) += JxWqp*rho_f*(u_old+(f_u - p0.grad_r(q_point[qp], system.time))*dt)*phi[i][qp];
+                    Fu(i) += JxWqp*rho_f*(u_old+(f_u - p0.grad(q_point[qp], system.time))*dt)*phi[i][qp];
                     for (uint j=0; j<n_u_dofs; j++)
                     {
                         Kuu(i,j) += JxWqp*( rho_f*phi[j][qp]*phi[i][qp]
