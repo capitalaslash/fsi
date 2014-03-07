@@ -18,3 +18,7 @@ FSI_Copy_File(fsi_ibc_param param_fsi_ibc.dat)
 add_executable(fsi_ibc fsi_ibc.cpp)
 target_link_libraries(fsi_ibc fsitest ${LIBS})
 
+FSI_Copy_File(fsi_tube_param param_fsi_tube.dat)
+add_executable(fsi_tube fsi_tube.cpp)
+target_link_libraries(fsi_tube fsitest ${LIBS})
+

@@ -1,0 +1,33 @@
+t_in = 0.
+t_out = 2.0
+dt = 5e-3
+
+print_step = 2
+
+nx_f = 10
+nx_s = 2
+ny = 20
+lx = 0.1025
+ly = 1.0
+li = 0.1
+
+mesh_file = structured
+flag_int = 10
+
+#axisym = 1
+
+# ref_f
+rho_f = 1e3
+mu_f = 1.0
+
+# ref_s
+rho_s = 1e3
+E = 1e8
+ni = 0.3
+
+f_v = 0.0
+
+damp = 0.0
+
+p_in = 15
+p_out = 13
