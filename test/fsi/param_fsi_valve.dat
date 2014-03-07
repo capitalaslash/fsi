@@ -1,0 +1,22 @@
+t_in = 0.
+t_out = 2.0
+dt = 2e-2
+
+print_step = 1
+
+mesh_file = valve.msh
+flag_int = 10
+
+#axisym = 1
+
+# ref_f
+rho_f = 1e3
+mu_f = 1.0
+
+# ref_s
+rho_s = 1e3
+E = 1e8
+ni = 0.3
+
+damp = 0.0
+
