@@ -62,7 +62,11 @@ include_directories(${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR})
 ### fsibase ###
 
 set(HDRS
+  FSI.hpp
   laplacian.hpp
+)
+install(FILES ${HDRS}
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )
 
 set(SRCS
