@@ -1,63 +1,29 @@
-/* The libMesh Finite Element Library. */
-/* Copyright (C) 2003  Benjamin S. Kirk */
+#include "FSI.hpp"
 
-/* This library is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
-
-/* This library is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
-
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
-
-// <h1>Systems Example 1 - Stokes Equations</h1>
-//
-// This example shows how a simple, linear system of equations
-// can be solved in parallel.  The system of equations are the familiar
-// Stokes equations for low-speed incompressible fluid flow.
-
-// C++ include files that we need
 #include <iostream>
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 
-// Basic include file needed for the mesh functionality.
-#include "libmesh/libmesh.h"
-#include "libmesh/getpot.h"
-#include "libmesh/mesh.h"
-#include "libmesh/mesh_generation.h"
-#include "libmesh/exodusII_io.h"
-#include "libmesh/vtk_io.h"
-#include "libmesh/xdr_io.h"
-#include "libmesh/equation_systems.h"
-#include "libmesh/fe.h"
-#include "libmesh/quadrature_gauss.h"
-#include "libmesh/dof_map.h"
-#include "libmesh/sparse_matrix.h"
-#include "libmesh/numeric_vector.h"
-#include "libmesh/dense_matrix.h"
-#include "libmesh/dense_vector.h"
-#include "libmesh/transient_system.h"
-#include "libmesh/linear_implicit_system.h"
-#include "libmesh/zero_function.h"
-#include "libmesh/dirichlet_boundaries.h"
+#include <libmesh/getpot.h>
+#include <libmesh/mesh.h>
+#include <libmesh/mesh_generation.h>
+#include <libmesh/exodusII_io.h>
+#include <libmesh/gmv_io.h>
+#include <libmesh/equation_systems.h>
+#include <libmesh/quadrature_gauss.h>
+#include <libmesh/dof_map.h>
+#include <libmesh/sparse_matrix.h>
+#include <libmesh/numeric_vector.h>
+#include <libmesh/system.h>
+#include <libmesh/linear_implicit_system.h>
+#include <libmesh/transient_system.h>
+#include <libmesh/zero_function.h>
+#include <libmesh/dirichlet_boundaries.h>
+#include <libmesh/dense_submatrix.h>
+#include <libmesh/dense_subvector.h>
 
-// For systems of equations the \p DenseSubMatrix
-// and \p DenseSubVector provide convenient ways for
-// assembling the element matrix and vector on a
-// component-by-component basis.
-#include "libmesh/dense_submatrix.h"
-#include "libmesh/dense_subvector.h"
-
-// The definition of a geometric element
-#include "libmesh/elem.h"
-
-#include <petsc.h>
+// extended VTK IO
+#include "util/extvtkio.hpp"
 
 #include "util/init.hpp"
 

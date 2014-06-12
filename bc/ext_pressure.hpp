@@ -1,9 +1,7 @@
 #ifndef EXT_PRESSURE_HPP
 #define EXT_PRESSURE_HPP
 
-#include "FSIconfig.h"
-
-#include <libmesh/libmesh.h>
+#include "FSI.hpp"
 
 struct ExtPressure
 {

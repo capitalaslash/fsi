@@ -1,9 +1,8 @@
 #ifndef BIQUAD_HPP
 #define BIQUAD_HPP
 
-#include "FSIconfig.h"
+#include "FSI.hpp"
 
-#include <libmesh/libmesh.h>
 #include <libmesh/mesh.h>
 #include <libmesh/mesh_generation.h>
 #include <libmesh/getpot.h>

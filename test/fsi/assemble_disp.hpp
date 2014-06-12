@@ -1,7 +1,7 @@
 #ifndef ASSEMBLE_DISP_HPP
 #define ASSEMBLE_DISP_HPP
 
-#include "FSIconfig.h"
+#include "FSI.hpp"
 
 #include <libmesh/libmesh.h>
 #include <libmesh/equation_systems.h>

@@ -1,12 +1,12 @@
 #ifndef PRESSURERAMP_HPP
 #define PRESSURERAMP_HPP
 
+#include "FSI.hpp"
+
 #include <libmesh/function_base.h>
 #include <libmesh/getpot.h>
 
 #include "bc/damp.hpp"
-
-using libMesh::Real;
 
 template <typename DampType>
 struct PressureRamp: public libMesh::FunctionBase<Real>
@@ -25,7 +25,7 @@ struct PressureRamp: public libMesh::FunctionBase<Real>
         M_damp(DampType(param))
     {}
 
-    void operator()(const Point& p, const Real t, libMesh::DenseVector<Real>& output)
+    void operator()(const libMesh::Point& p, const Real t, libMesh::DenseVector<Real>& output)
     {
         if( t < M_tin )       output(2) = 0.0;
         else if( t > M_tout ) output(2) = M_pmax;

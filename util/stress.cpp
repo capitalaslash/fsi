@@ -1,5 +1,12 @@
 #include "stress.hpp"
 
+#include <libmesh/linear_implicit_system.h>
+#include <libmesh/dof_map.h>
+#include <libmesh/quadrature_gauss.h>
+#include <libmesh/numeric_vector.h>
+#include <libmesh/utility.h>
+
+using namespace libMesh;
 using namespace libMesh::Utility;
 
 // monolithic block for displacement

@@ -1,39 +1,25 @@
-// C++ include files that we need
+#include "FSI.hpp"
+
 #include <iostream>
 #include <algorithm>
 #include <cmath>
 
-// Basic include file needed for the mesh functionality.
-#include "libmesh/libmesh.h"
-#include "libmesh/getpot.h"
-#include "libmesh/mesh.h"
-#include "libmesh/mesh_generation.h"
-#include "libmesh/exodusII_io.h"
-#include "libmesh/xdr_io.h"
-#include "libmesh/gmsh_io.h"
-#include "libmesh/gmv_io.h"
-#include "libmesh/equation_systems.h"
-#include "libmesh/fe.h"
-#include "libmesh/quadrature_gauss.h"
-#include "libmesh/dof_map.h"
-#include "libmesh/sparse_matrix.h"
-#include "libmesh/numeric_vector.h"
-#include "libmesh/dense_matrix.h"
-#include "libmesh/dense_vector.h"
-#include "libmesh/linear_implicit_system.h"
-#include "libmesh/transient_system.h"
-#include "libmesh/zero_function.h"
-#include "libmesh/dirichlet_boundaries.h"
-
-// For systems of equations the \p DenseSubMatrix
-// and \p DenseSubVector provide convenient ways for
-// assembling the element matrix and vector on a
-// component-by-component basis.
-#include "libmesh/dense_submatrix.h"
-#include "libmesh/dense_subvector.h"
-
-// The definition of a geometric element
-#include "libmesh/elem.h"
+#include <libmesh/getpot.h>
+#include <libmesh/mesh.h>
+#include <libmesh/exodusII_io.h>
+#include <libmesh/gmv_io.h>
+#include <libmesh/equation_systems.h>
+#include <libmesh/quadrature_gauss.h>
+#include <libmesh/dof_map.h>
+#include <libmesh/sparse_matrix.h>
+#include <libmesh/numeric_vector.h>
+#include <libmesh/system.h>
+#include <libmesh/linear_implicit_system.h>
+#include <libmesh/transient_system.h>
+#include <libmesh/zero_function.h>
+#include <libmesh/dirichlet_boundaries.h>
+#include <libmesh/dense_submatrix.h>
+#include <libmesh/dense_subvector.h>
 
 // extended VTK IO
 #include "util/extvtkio.hpp"

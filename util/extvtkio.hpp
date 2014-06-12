@@ -1,7 +1,7 @@
 #ifndef EXTVTKIO_HPP
 #define EXTVTKIO_HPP
 
-#include "FSIconfig.h"
+#include "FSI.hpp"
 
 #include <libmesh/vtk_io.h>
 #include <libmesh/parameters.h>
@@ -10,15 +10,12 @@
 #include <libxml/xmlwriter.h>
 #endif
 
-namespace libMesh
-{
-
-class ExtVTKIO : public VTKIO
+class ExtVTKIO : public libMesh::VTKIO
 {
 public:
-    explicit ExtVTKIO (MeshBase const & mesh, Parameters const & par);
+    explicit ExtVTKIO (libMesh::MeshBase const & mesh, libMesh::Parameters const & par);
 
-    void write_solution(const EquationSystems & es,
+    void write_solution(const libMesh::EquationSystems & es,
                         const std::set<std::string> *system_names = NULL);
 protected:
 
@@ -30,7 +27,5 @@ protected:
     std::string const _basename;
     uint const _print_step;
 };
-
-}
 
 #endif // EXTVTKIO_HPP

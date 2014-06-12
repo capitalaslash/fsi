@@ -1,38 +1,37 @@
 #ifndef INTERFACE_HPP
 #define INTERFACE_HPP
 
-#include "FSIconfig.h"
+#include "FSI.hpp"
 
-#include <libmesh/libmesh.h>
 #include <libmesh/explicit_system.h>
 #include <libmesh/numeric_vector.h>
 #include <libmesh/dof_map.h>
 
-class InterfaceSystem: public ExplicitSystem
+class InterfaceSystem: public libMesh::ExplicitSystem
 {
 public:
 
-    InterfaceSystem (EquationSystems& es,
+    InterfaceSystem (libMesh::EquationSystems& es,
                      const std::string& name,
                      const unsigned int number):
-        ExplicitSystem(es, name, number),
+        libMesh::ExplicitSystem(es, name, number),
         M_isAssembled(false),
         M_facetsMarked(false)
     {
-        this->add_variable("interface", SECOND, LAGRANGE);
+        this->add_variable("interface", libMesh::SECOND, libMesh::LAGRANGE);
     }
 
     // build interface position in solution vector
     void assemble();
 
     // mark facets on interface with given flag
-    void mark_facets(subdomain_id_type const flag);
+    void mark_facets(libMesh::subdomain_id_type const flag);
     
     // compute total length of the interface
     Real length() const;
 
     // set a bool vector to know if dofs on element are on interface
-    void on_interface( Elem const* e, std::vector<bool>& on_int) const;
+    void on_interface( libMesh::Elem const* e, std::vector<bool>& on_int) const;
 
 private:
     bool M_isAssembled;
@@ -41,7 +40,7 @@ private:
     // boundary_id_type const M_solidFlag;
 };
 
-inline void InterfaceSystem::on_interface( Elem const* e, std::vector<bool>& on_int) const
+inline void InterfaceSystem::on_interface( libMesh::Elem const* e, std::vector<bool>& on_int) const
 {
     std::vector<dof_id_type> dof_indices;
     get_dof_map().dof_indices(e, dof_indices, 0);

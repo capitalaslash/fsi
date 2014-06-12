@@ -1,3 +1,5 @@
+#include "FSI.hpp"
+
 #include <libmesh/mesh.h>
 #include <libmesh/mesh_generation.h>
 #include <libmesh/equation_systems.h>

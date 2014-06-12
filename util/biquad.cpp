@@ -1,5 +1,7 @@
 #include "biquad.hpp"
 
+using namespace libMesh;
+
 void generate_biquad( Mesh & mesh, GetPot & param )
 {
     uint const flag_f = param("flag_f", 11);

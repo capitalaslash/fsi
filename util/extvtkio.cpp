@@ -1,8 +1,10 @@
+#include "extvtkio.hpp"
+
 #include <iomanip>
 
 #include <libmesh/equation_systems.h>
 
-#include "extvtkio.hpp"
+using namespace libMesh;
 
 ExtVTKIO::ExtVTKIO (MeshBase const & mesh, Parameters const & par):
     VTKIO (mesh),

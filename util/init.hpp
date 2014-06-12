@@ -1,7 +1,7 @@
 #ifndef INIT_HPP
 #define INIT_HPP
 
-#include "FSIconfig.h"
+#include "FSI.hpp"
 
 #include <libmesh/libmesh.h>
 #include <libmesh/point.h>

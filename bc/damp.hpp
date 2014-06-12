@@ -1,9 +1,9 @@
 #ifndef DAMP_HPP
 #define DAMP_HPP
 
-#include <libmesh/getpot.h>
+#include "FSI.hpp"
 
-using libMesh::Real;
+#include <libmesh/getpot.h>
 
 struct Damp
 {
