@@ -134,7 +134,9 @@ void compute_stress(EquationSystems& es)
           Number vonMises_value = std::sqrt( 0.5*( pow<2>(elem_sigma(0,0) - elem_sigma(1,1)) +
                                                    pow<2>(elem_sigma(1,1) - elem_sigma(2,2)) +
                                                    pow<2>(elem_sigma(2,2) - elem_sigma(0,0)) +
-                                                   6.*(pow<2>(elem_sigma(0,1)) + pow<2>(elem_sigma(1,2)) + pow<2>(elem_sigma(2,0)))
+                                                   6.*(pow<2>(elem_sigma(0,1)) +
+                                                       pow<2>(elem_sigma(1,2)) +
+                                                       pow<2>(elem_sigma(2,0)))
                                                    ) );
           dof_map_s.dof_indices (elem, dof_indices_s, vonMises_var);
           dof_id_type dof_index = dof_indices_s[0];
@@ -149,4 +151,125 @@ void compute_stress(EquationSystems& es)
   // Should call close and update when we set vector entries directly
   stress.solution->close();
   stress.update();
+}
+
+void StressSystem::assemble()
+{
+    EquationSystems const & es = get_equation_systems();
+
+    const MeshBase& mesh = get_mesh();
+
+    const uint dim = mesh.mesh_dimension();
+
+    const DofMap& dof_map = this->get_dof_map();
+
+    DofMap const& dof_map_d = M_systemDx.get_dof_map();
+    //DofMap const& dof_map_e = M_systemDy.get_dof_map();
+    FEType fe_type_d = dof_map_d.variable_type(0);
+    AutoPtr<FEBase> fe_d (FEBase::build(dim, fe_type_d));
+    QGauss qrule_d (dim, fe_type_d.default_quadrature_order());
+    fe_d->attach_quadrature_rule (&qrule_d);
+
+    const std::vector<Real>& JxW = fe_d->get_JxW();
+    const std::vector<std::vector<Real> >& b = fe_d->get_phi();
+    const std::vector<std::vector<RealGradient> >& grad_b = fe_d->get_dphi();
+    const std::vector<Point >& q_point = fe_d->get_xyz();
+
+    std::vector<dof_id_type> dof_indices;
+    std::vector<dof_id_type> dof_indices_d;
+
+    DenseMatrix<Real> elem_sigma;
+
+    Real const mu = es.parameters.get<Real>("mu_s");
+    Real const lambda = es.parameters.get<Real>("lambda");
+    subdomain_id_type const flag_s = es.parameters.get<subdomain_id_type>("flag_s");
+
+    MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
+    const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
+
+    for ( ; el != end_el; ++el)
+    {
+        const Elem* elem = *el;
+
+        if (elem->subdomain_id() == flag_s)
+        {
+            dof_map_d.dof_indices (elem, dof_indices_d, 0);
+
+            const uint n_dofs = dof_indices_d.size();
+
+            fe_d->reinit (elem);
+
+            elem_sigma.resize(3, 3);
+
+            for (uint qp=0; qp<qrule_d.n_points(); qp++)
+            {
+                Real const invR = 1./q_point[qp](0);
+
+                // Get the gradient at this quadrature point
+                Real d_old = 0.;
+                Gradient grad_d;
+                Gradient grad_e;
+                for(uint l=0; l<n_dofs; l++)
+                {
+                    d_old += b[l][qp] * M_systemDx.current_solution (dof_indices_d[l]);
+                    grad_d.add_scaled(grad_b[l][qp], M_systemDx.current_solution(dof_indices_d[l]));
+                    grad_e.add_scaled(grad_b[l][qp], M_systemDy.current_solution(dof_indices_d[l]));
+                }
+
+                // AXISYM!!!
+                Real trace_eps = grad_d(0) + grad_e(1) + d_old*invR;
+                elem_sigma(0,0) += JxW[qp] * (2.*mu*grad_d(0)  + lambda*trace_eps);
+                elem_sigma(1,1) += JxW[qp] * (2.*mu*grad_e(1)  + lambda*trace_eps);
+                elem_sigma(2,2) += JxW[qp] * (2.*mu*d_old*invR + lambda*trace_eps);
+                elem_sigma(0,1) += JxW[qp] * (mu*(grad_d(1)+grad_e(0)));
+                elem_sigma(1,0) += JxW[qp] * (mu*(grad_d(1)+grad_e(0)));
+            }
+
+            // Get the average stresses by dividing by the element volume
+            elem_sigma.scale(1./elem->volume());
+
+            // load elem_sigma data into stress_system
+            for(uint i=0; i<3; i++)
+                for(uint j=0; j<3; j++)
+                {
+                    dof_map.dof_indices (elem, dof_indices, M_sVar[i][j]);
+
+                    // We are using CONSTANT MONOMIAL basis functions, hence we only need to get
+                    // one dof index per variable
+                    dof_id_type dof_index = dof_indices[0];
+
+                    if( (this->solution->first_local_index() <= dof_index) &&
+                            (dof_index < this->solution->last_local_index()) )
+                    {
+                        this->solution->set(dof_index, elem_sigma(i,j));
+                    }
+
+                }
+
+            // Also, the von Mises stress
+            Number vonMises_value = std::sqrt( 0.5*( pow<2>(elem_sigma(0,0) - elem_sigma(1,1)) +
+                                                     pow<2>(elem_sigma(1,1) - elem_sigma(2,2)) +
+                                                     pow<2>(elem_sigma(2,2) - elem_sigma(0,0)) +
+                                                     6.*(pow<2>(elem_sigma(0,1)) +
+                                                         pow<2>(elem_sigma(1,2)) +
+                                                         pow<2>(elem_sigma(2,0)))
+                                                     ) );
+            dof_map.dof_indices (elem, dof_indices, M_vonMisesVar);
+            dof_id_type dof_index = dof_indices[0];
+            if( (this->solution->first_local_index() <= dof_index) &&
+                    (dof_index < this->solution->last_local_index()) )
+            {
+                this->solution->set(dof_index, vonMises_value);
+            }
+        }
+    }
+
+    this->solution->close();
+    this->update();
+}
+
+template <>
+void StressSystem::localStress<TWOD_AXI> (DenseMatrix<Real> & /*s*/)
+{
+
 }
