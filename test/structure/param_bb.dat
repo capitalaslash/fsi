@@ -1,0 +1,6 @@
+t_in = 0.0
+t_out = 15.0
+dt = 5e-2
+
+damp = 0.3
+axysim = 1
