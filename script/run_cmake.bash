@@ -11,9 +11,9 @@ fi
 # set method specific flags
 cmake_flags=""
 if [[ $_METHOD == "opt" ]]; then
-  cmake_flags += "-DCMAKE_BUILD_TYPE:STRING=Release"
+  cmake_flags+="-DCMAKE_BUILD_TYPE:STRING=Release"
 elif [[ $_METHOD == "dbg" ]]; then
-  cmake_flags += "-DCMAKE_BUILD_TYPE:STRING=Debug"
+  cmake_flags+="-DCMAKE_BUILD_TYPE:STRING=Debug"
 fi
 
 SRC_DIR=$PWD/..
